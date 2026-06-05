@@ -1,0 +1,2 @@
+-- Los usuarios locales se crean con infra/scripts/create-local-auth-user.ps1
+-- para pasar por GoTrue y disparar public.handle_new_auth_user().

@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Next.js
+.next/
+out/
+
+# Local environment
+.env
+.env.*
+apps/api/.env
+apps/web/.env*
+!.env.example
+
+# Supabase local runtime
+supabase/.temp/
+supabase/.branches/
+
+# Generated validation artifacts
+final_runs/
+
+# Local document storage
+storage/documents/*
+storage/processed/*
+storage/reports/*
+!storage/documents/.gitkeep
+!storage/processed/.gitkeep
+!storage/reports/.gitkeep
+
+# OS/editor
+.DS_Store
+Thumbs.db

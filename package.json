@@ -1,0 +1,20 @@
+{
+  "name": "revision-documental-ai",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "web:dev": "npm run dev -w apps/web",
+    "web:build": "npm run build -w apps/web",
+    "web:start": "npm run start -w apps/web",
+    "api:dev": "cd apps/api && .venv\\Scripts\\activate && uvicorn app.main:app --reload",
+    "db:up": "supabase start && docker compose -f infra/docker-compose.yml up -d --remove-orphans redis && powershell -ExecutionPolicy Bypass -File infra/scripts/write-api-env.ps1",
+    "db:down": "docker compose -f infra/docker-compose.yml down --remove-orphans && supabase stop",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:reset": "supabase db reset --local",
+    "supabase:status": "supabase status"
+  }
+}
