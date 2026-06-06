@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from uuid import UUID
 import httpx
@@ -12,33 +11,8 @@ from app.database import get_db
 from app.models import Profile
 from app.schemas import TokenData
 
-import bcrypt
-
 # Esquema de seguridad HTTP Bearer (auto_error=False para manejar query params manualmente)
 security = HTTPBearer(auto_error=False)
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(
-        plain_password.encode('utf-8'), 
-        hashed_password.encode('utf-8')
-    )
-
-def get_password_hash(password: str) -> str:
-    salt = bcrypt.gensalt()
-    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
-
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
-    return encoded_jwt
-
-
 def get_supabase_user(token_str: str) -> dict:
     if not settings.SUPABASE_ANON_KEY:
         raise HTTPException(
@@ -71,17 +45,6 @@ def get_supabase_user(token_str: str) -> dict:
     return response.json()
 
 
-def get_legacy_token_data(token_str: str) -> TokenData:
-    payload = jwt.decode(token_str, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
-    user_id_str: str = payload.get("sub")
-    email: str = payload.get("email")
-    role: str = payload.get("role")
-
-    if user_id_str is None or email is None:
-        raise JWTError("Token JWT legacy sin sub/email.")
-
-    return TokenData(user_id=UUID(user_id_str), email=email, role=role)
-
 
 def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
@@ -111,12 +74,7 @@ def get_current_user(
             role=None,
         )
     except HTTPException as supabase_error:
-        if settings.SUPABASE_ANON_KEY:
-            raise supabase_error
-        try:
-            token_data = get_legacy_token_data(token_str)
-        except (JWTError, ValueError):
-            raise credentials_exception
+        raise supabase_error
 
     user = db.query(Profile).filter(Profile.id == token_data.user_id).first()
     if user is None:
