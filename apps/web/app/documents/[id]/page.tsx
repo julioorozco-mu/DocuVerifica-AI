@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -57,7 +57,7 @@ export default function DocumentWorkspacePage({ params }: WorkspaceProps) {
   const [fileState, setFileState] = useState<FileState | null>(null);
   const isPdfDocument = document?.filename.toLowerCase().endsWith(".pdf") ?? false;
   
-  const [selectedModel, setSelectedModel] = useState<string>("qwen2.5:3b");
+  const [selectedModel, setSelectedModel] = useState<string>("qwen3.5:9b");
   const [aiReviewTriggering, setAiReviewTriggering] = useState(false);
 
   // Desenvolver los params dinámicos
@@ -534,15 +534,51 @@ export default function DocumentWorkspacePage({ params }: WorkspaceProps) {
                             <SelectValue placeholder="Selecciona el modelo" />
                           </SelectTrigger>
                           <SelectContent className="bg-slate-900 border-slate-800 text-slate-100 text-xs">
-                            <SelectItem value="llama3.2:1b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
-                              Llama 3.2 1B (Rápido - Soporte Local Completo)
-                            </SelectItem>
-                            <SelectItem value="qwen2.5:3b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
-                              Qwen 2.5 3B (Equilibrado)
-                            </SelectItem>
-                            <SelectItem value="qwen3.5:9b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
-                              Qwen 3.5 9B (Preciso - Requiere +VRAM)
-                            </SelectItem>
+                            <SelectGroup>
+                              <SelectLabel className="text-indigo-400 font-semibold px-2 py-1.5 text-xs">Recomendados (Equilibrio rápido/preciso)</SelectLabel>
+                              <SelectItem value="qwen3.5:9b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
+                                Qwen 3.5 9B (Predeterminado - Recomendado)
+                              </SelectItem>
+                              <SelectItem value="llama3.1:8b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
+                                Llama 3.1 8B
+                              </SelectItem>
+                              <SelectItem value="phi4" className="focus:bg-slate-800 py-1.5 cursor-pointer">
+                                Phi-4
+                              </SelectItem>
+                            </SelectGroup>
+                            
+                            <SelectSeparator className="bg-slate-800" />
+                            
+                            <SelectGroup>
+                              <SelectLabel className="text-emerald-400 font-semibold px-2 py-1.5 text-xs">Rápidos (Menor VRAM, mayor velocidad)</SelectLabel>
+                              <SelectItem value="qwen2.5:3b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
+                                Qwen 2.5 3B
+                              </SelectItem>
+                              <SelectItem value="llama3.2:1b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
+                                Llama 3.2 1B
+                              </SelectItem>
+                            </SelectGroup>
+
+                            <SelectSeparator className="bg-slate-800" />
+                            
+                            <SelectGroup>
+                              <SelectLabel className="text-orange-400 font-semibold px-2 py-1.5 text-xs">Razonamiento Max (Pensamiento profundo)</SelectLabel>
+                              <SelectItem value="deepseek-r1:8b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
+                                DeepSeek R1 8B
+                              </SelectItem>
+                              <SelectItem value="deepseek-r1:1.5b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
+                                DeepSeek R1 1.5B
+                              </SelectItem>
+                            </SelectGroup>
+
+                            <SelectSeparator className="bg-slate-800" />
+                            
+                            <SelectGroup>
+                              <SelectLabel className="text-slate-400 font-semibold px-2 py-1.5 text-xs">Embeddings</SelectLabel>
+                              <SelectItem value="nomic-embed-text-v2-moe" className="focus:bg-slate-800 py-1.5 cursor-pointer" disabled>
+                                Nomic Embed Text v2 (Solo base de datos)
+                              </SelectItem>
+                            </SelectGroup>
                           </SelectContent>
                         </Select>
                       </div>

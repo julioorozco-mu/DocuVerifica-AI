@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     SUPABASE_ANON_KEY: str = ""
     REDIS_URL: str = "redis://127.0.0.1:6379/0"
     OLLAMA_BASE_URL: str = Field(default="http://localhost:11434")
-    OLLAMA_MODEL: str = Field(default="llama3.2:1b")
+    OLLAMA_MODEL: str = Field(default="qwen3.5:9b")
 
     model_config = SettingsConfigDict(
         env_file=".env",

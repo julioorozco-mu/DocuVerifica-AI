@@ -14,14 +14,14 @@ class TokenData(BaseModel):
     role: Optional[str] = None
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 
 # --- Perfiles de Usuario ---
 class ProfileResponse(BaseModel):
     id: UUID
-    email: EmailStr
+    email: str
     full_name: str
     role: str
     created_at: datetime

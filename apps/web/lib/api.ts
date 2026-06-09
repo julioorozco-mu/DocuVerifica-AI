@@ -4,6 +4,21 @@ export function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
+// FastAPI puede devolver detail como string o como array de objetos (errores Pydantic).
+// Esta función lo convierte siempre a string legible.
+function parseDetail(detail: unknown): string {
+  if (!detail) return "Error desconocido";
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((d) =>
+        typeof d === "object" && d !== null && "msg" in d ? String((d as Record<string, unknown>).msg) : JSON.stringify(d)
+      )
+      .join(" | ");
+  }
+  return JSON.stringify(detail);
+}
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -142,7 +157,7 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Error desconocido" }));
-      throw new Error(err.detail || `Error HTTP ${res.status}`);
+      throw new Error(parseDetail(err.detail) || `Error HTTP ${res.status}`);
     }
     return res.json();
   },
@@ -155,7 +170,7 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Error desconocido" }));
-      throw new Error(err.detail || `Error HTTP ${res.status}`);
+      throw new Error(parseDetail(err.detail) || `Error HTTP ${res.status}`);
     }
     return res.json();
   },
@@ -168,7 +183,7 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Error desconocido" }));
-      throw new Error(err.detail || `Error HTTP ${res.status}`);
+      throw new Error(parseDetail(err.detail) || `Error HTTP ${res.status}`);
     }
     return res.json();
   },
@@ -180,7 +195,7 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Error desconocido" }));
-      throw new Error(err.detail || `Error HTTP ${res.status}`);
+      throw new Error(parseDetail(err.detail) || `Error HTTP ${res.status}`);
     }
   },
 
