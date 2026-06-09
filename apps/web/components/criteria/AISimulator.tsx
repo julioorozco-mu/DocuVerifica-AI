@@ -156,18 +156,8 @@ export function AISimulator({ criterionName, criterionDescription }: AISimulator
                 {/* ── Recomendados ── */}
                 <SelectGroup>
                   <SelectLabel className="text-emerald-400/80 font-semibold uppercase tracking-wider text-[9px] px-2 pt-2 pb-1">⭐ Recomendados</SelectLabel>
-                  <SelectItem value="qwen3.5:9b" className="focus:bg-slate-800 cursor-pointer">
-                    <span className="flex items-center gap-1.5">
-                      <Star className="w-3 h-3 text-amber-400 fill-amber-400 flex-shrink-0" />
-                      Qwen 3.5 9B
-                      <span className="text-emerald-400/60 text-[9px]">(Predeterminado)</span>
-                    </span>
-                  </SelectItem>
                   <SelectItem value="llama3.1:8b" className="focus:bg-slate-800 cursor-pointer">
                     Llama 3.1 8B
-                  </SelectItem>
-                  <SelectItem value="phi4" className="focus:bg-slate-800 cursor-pointer">
-                    Phi-4 14B
                   </SelectItem>
                 </SelectGroup>
                 <SelectSeparator />
@@ -175,29 +165,14 @@ export function AISimulator({ criterionName, criterionDescription }: AISimulator
                 <SelectGroup>
                   <SelectLabel className="text-sky-400/80 font-semibold uppercase tracking-wider text-[9px] px-2 pt-1 pb-1">⚡ Rápidos</SelectLabel>
                   <SelectItem value="qwen2.5:3b" className="focus:bg-slate-800 cursor-pointer">
-                    Qwen 2.5 3B
+                    <span className="flex items-center gap-1.5">
+                      <Star className="w-3 h-3 text-amber-400 fill-amber-400 flex-shrink-0" />
+                      Qwen 2.5 3B
+                      <span className="text-emerald-400/60 text-[9px]">(Predeterminado)</span>
+                    </span>
                   </SelectItem>
                   <SelectItem value="llama3.2:1b" className="focus:bg-slate-800 cursor-pointer">
                     Llama 3.2 1B
-                  </SelectItem>
-                </SelectGroup>
-                <SelectSeparator />
-                {/* ── Razonamiento Max ── */}
-                <SelectGroup>
-                  <SelectLabel className="text-purple-400/80 font-semibold uppercase tracking-wider text-[9px] px-2 pt-1 pb-1">🧠 Razonamiento Max</SelectLabel>
-                  <SelectItem value="deepseek-r1:8b" className="focus:bg-slate-800 cursor-pointer">
-                    DeepSeek R1 8B
-                  </SelectItem>
-                  <SelectItem value="deepseek-r1:1.5b" className="focus:bg-slate-800 cursor-pointer">
-                    DeepSeek R1 1.5B
-                  </SelectItem>
-                </SelectGroup>
-                <SelectSeparator />
-                {/* ── Embeddings ── */}
-                <SelectGroup>
-                  <SelectLabel className="text-orange-400/80 font-semibold uppercase tracking-wider text-[9px] px-2 pt-1 pb-1">📐 Embeddings</SelectLabel>
-                  <SelectItem value="nomic-embed-text-v2-moe" className="focus:bg-slate-800 cursor-pointer" disabled>
-                    Nomic Embed Text v2 MoE (Solo base de datos)
                   </SelectItem>
                 </SelectGroup>
               </SelectContent>
