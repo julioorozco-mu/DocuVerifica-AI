@@ -103,3 +103,69 @@ class ExtractionResultResponse(BaseModel):
     ocr_required: bool = False
     markdown_preview: Optional[str] = None
     message: str = ""
+
+
+# --- Criterios de Revisión ---
+class ReviewCriterionBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    rule_type: str = Field(default="ai", pattern="^(rule|semantic|ai|rule_then_ai)$")
+    is_active: bool = True
+    project_type: Optional[str] = None
+
+class ReviewCriterionCreate(ReviewCriterionBase):
+    pass
+
+class ReviewCriterionUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    rule_type: Optional[str] = Field(default=None, pattern="^(rule|semantic|ai|rule_then_ai)$")
+    is_active: Optional[bool] = None
+    project_type: Optional[str] = None
+
+class ReviewCriterionResponse(ReviewCriterionBase):
+    id: UUID
+    reviewer_id: Optional[UUID] = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# --- Simulación IA ---
+class AISimulationRequest(BaseModel):
+    """Permite probar un criterio contra un fragmento de texto sin guardarlo en BD."""
+    criterion_name: str
+    criterion_description: str
+    text_fragment: str
+    model_name: Optional[str] = None
+
+
+# --- Resultados de IA ---
+class AIReviewResultResponse(BaseModel):
+    id: UUID
+    document_id: UUID
+    criterion_id: UUID
+    status: str
+    confidence: float
+    evidence: Optional[str] = None
+    page_number: Optional[int] = None
+    explanation: Optional[str] = None
+    human_action_required: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class AIReviewRequest(BaseModel):
+    model_name: Optional[str] = None
+
+
+# --- Ollama Structured Output ---
+class AIReviewOutput(BaseModel):
+    criterion_id: str
+    status: str = Field(..., pattern="^(cumple|no_cumple|no_encontrado|requiere_revision)$")
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    evidence: str
+    page_number: Optional[int] = None
+    explanation: str
+    human_action_required: bool

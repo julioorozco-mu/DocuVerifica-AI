@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
@@ -9,6 +10,9 @@ class Settings(BaseSettings):
     STORAGE_DIR: str = str(PROJECT_ROOT / "storage" / "documents")
     SUPABASE_URL: str = "http://127.0.0.1:54321"
     SUPABASE_ANON_KEY: str = ""
+    REDIS_URL: str = "redis://127.0.0.1:6379/0"
+    OLLAMA_BASE_URL: str = Field(default="http://localhost:11434")
+    OLLAMA_MODEL: str = Field(default="llama3.2:1b")
 
     model_config = SettingsConfigDict(
         env_file=".env",

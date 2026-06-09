@@ -154,7 +154,7 @@ export default function DashboardClient() {
                 <div className="space-y-1">
                   <div className="flex justify-between text-[11px] text-slate-400">
                     <span>Modelo Asignado</span>
-                    <span className="text-indigo-300 font-medium">qwen3.5:9b (Q4)</span>
+                    <span className="text-indigo-300 font-medium">Multi-modelo (Selector Dinámico)</span>
                   </div>
                   <div className="flex justify-between text-[11px] text-slate-400">
                     <span>Procesos Activos</span>

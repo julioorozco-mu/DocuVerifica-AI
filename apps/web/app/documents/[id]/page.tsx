@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import NavigationLayout from "@/components/NavigationLayout";
+import { AIReviewChecklist } from "@/components/documents/AIReviewChecklist";
 import dynamic from "next/dynamic";
 const PDFViewer = dynamic(() => import("@/components/PDFViewer"), { ssr: false });
 import { api, DocumentInfo, DocumentChunk, ExtractionResult, HumanVerdict, getErrorMessage } from "@/lib/api";
@@ -55,6 +56,9 @@ export default function DocumentWorkspacePage({ params }: WorkspaceProps) {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [fileState, setFileState] = useState<FileState | null>(null);
   const isPdfDocument = document?.filename.toLowerCase().endsWith(".pdf") ?? false;
+  
+  const [selectedModel, setSelectedModel] = useState<string>("qwen2.5:3b");
+  const [aiReviewTriggering, setAiReviewTriggering] = useState(false);
 
   // Desenvolver los params dinámicos
   useEffect(() => {
@@ -156,6 +160,21 @@ export default function DocumentWorkspacePage({ params }: WorkspaceProps) {
       setMessage({ text: getErrorMessage(err, "Error al registrar el dictamen."), type: "error" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTriggerAiReview = async () => {
+    if (!docId) return;
+    setAiReviewTriggering(true);
+    try {
+      await api.post(`/documents/${docId}/review-ai`, { model_name: selectedModel });
+      // Recargar el documento para obtener el nuevo estado ("ai_reviewing")
+      const updatedDoc = await api.get<DocumentInfo>(`/documents/${docId}`);
+      setDocument(updatedDoc);
+    } catch (err: unknown) {
+      setMessage({ text: getErrorMessage(err, "Error al iniciar la revisión IA."), type: "error" });
+    } finally {
+      setAiReviewTriggering(false);
     }
   };
 
@@ -480,42 +499,65 @@ export default function DocumentWorkspacePage({ params }: WorkspaceProps) {
 
               {/* Tab: Pre-revisión IA */}
               <TabsContent value="ai" className="flex-1 overflow-y-auto m-0 p-5 space-y-5 custom-scrollbar">
-                <div className="p-4 bg-indigo-950/20 border border-indigo-500/10 rounded-2xl text-center space-y-3">
-                  <BrainCircuit className="w-8 h-8 text-indigo-400/70 mx-auto animate-pulse" />
-                  <h4 className="text-sm font-bold text-indigo-300">Análisis Asistido</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    El motor de revisión local procesará el documento para detectar omisiones.
-                  </p>
-                  <div className="text-[10px] text-slate-500 border-t border-slate-800/60 pt-2 mt-2 font-medium">
-                    (Integración programada para la Fase 5)
+                
+                {(!document?.status || ["uploaded", "extracting_text", "ocr_required", "ocr_processing"].includes(document.status)) ? (
+                  <div className="p-4 bg-slate-900/40 border border-slate-800 rounded-2xl text-center space-y-3">
+                    <BrainCircuit className="w-8 h-8 text-slate-500 mx-auto" />
+                    <h4 className="text-sm font-bold text-slate-300">Análisis no disponible</h4>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      El documento necesita extraer el texto (Texto extraído) antes de poder ejecutar la Pre-revisión IA.
+                    </p>
                   </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Criterios Evaluados (Simulación)</h3>
-                  
-                  <div className="space-y-2 opacity-60">
-                    <div className="p-3 bg-slate-900/60 border border-slate-800 rounded-xl">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-semibold text-slate-200">Vigencia de Identificación</span>
-                        <span className="text-[10px] flex items-center gap-1 text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded-full">
-                          <AlertCircle className="w-3 h-3" /> Requiere revisión
-                        </span>
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-4 bg-indigo-950/20 p-4 border border-indigo-500/10 rounded-2xl mb-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="text-sm font-bold text-indigo-300">Análisis Asistido (Ollama)</h4>
+                          <p className="text-[11px] text-slate-400 mt-1">Selecciona el modelo a usar para la revisión.</p>
+                        </div>
+                        <Button 
+                          onClick={handleTriggerAiReview}
+                          disabled={aiReviewTriggering || document.status === "ai_reviewing"}
+                          className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs h-8 cursor-pointer"
+                        >
+                          {aiReviewTriggering || document.status === "ai_reviewing" ? (
+                            <><Loader2 className="w-3 h-3 mr-2 animate-spin" /> Procesando...</>
+                          ) : (
+                            <><Sparkles className="w-3 h-3 mr-2" /> Ejecutar Revisión</>
+                          )}
+                        </Button>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-2">No se encontró fecha de vigencia clara en la página 1.</p>
+                      <div>
+                        <Select value={selectedModel} onValueChange={(val) => val && setSelectedModel(val)}>
+                          <SelectTrigger className="bg-slate-900/60 border-slate-800 text-slate-100 rounded-xl h-9 text-xs">
+                            <SelectValue placeholder="Selecciona el modelo" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-900 border-slate-800 text-slate-100 text-xs">
+                            <SelectItem value="llama3.2:1b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
+                              Llama 3.2 1B (Rápido - Soporte Local Completo)
+                            </SelectItem>
+                            <SelectItem value="qwen2.5:3b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
+                              Qwen 2.5 3B (Equilibrado)
+                            </SelectItem>
+                            <SelectItem value="qwen3.5:9b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
+                              Qwen 3.5 9B (Preciso - Requiere +VRAM)
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
 
-                    <div className="p-3 bg-slate-900/60 border border-slate-800 rounded-xl">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-semibold text-slate-200">Firma Autógrafa</span>
-                        <span className="text-[10px] flex items-center gap-1 text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">
-                          <CheckCircle className="w-3 h-3" /> Cumple
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 mt-2">Trazo detectado en el área designada (Pág 2).</p>
-                    </div>
-                  </div>
-                </div>
+                    <AIReviewChecklist 
+                      documentId={docId} 
+                      onEvidenceClick={(pageNumber) => {
+                        if (pageNumber && isPdfDocument) {
+                          setCurrentPage(pageNumber);
+                        }
+                      }} 
+                    />
+                  </>
+                )}
               </TabsContent>
 
               {/* Tab: Dictamen Humano */}

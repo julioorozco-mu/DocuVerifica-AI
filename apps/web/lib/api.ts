@@ -64,6 +64,41 @@ export interface ExtractionResult {
   message: string;
 }
 
+export interface AIReviewResult {
+  id: string;
+  document_id: string;
+  criterion_id: string;
+  status: "cumple" | "no_cumple" | "no_encontrado" | "requiere_revision";
+  confidence: number;
+  evidence?: string;
+  page_number?: number;
+  explanation?: string;
+  human_action_required: boolean;
+  created_at: string;
+}
+
+export interface ReviewCriterion {
+  id: string;
+  name: string;
+  description?: string;
+  rule_type: "rule" | "semantic" | "ai" | "rule_then_ai";
+  is_active: boolean;
+  project_type?: string;
+  reviewer_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AISimulationResult {
+  criterion_id: string;
+  status: "cumple" | "no_cumple" | "no_encontrado" | "requiere_revision";
+  confidence: number;
+  evidence: string;
+  page_number?: number;
+  explanation: string;
+  human_action_required: boolean;
+}
+
 // Helper para obtener headers con token
 function getHeaders(isMultipart = false): HeadersInit {
   const headers: Record<string, string> = {};
@@ -123,6 +158,30 @@ export const api = {
       throw new Error(err.detail || `Error HTTP ${res.status}`);
     }
     return res.json();
+  },
+
+  async put<T>(endpoint: string, body: unknown): Promise<T> {
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Error desconocido" }));
+      throw new Error(err.detail || `Error HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async delete(endpoint: string): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Error desconocido" }));
+      throw new Error(err.detail || `Error HTTP ${res.status}`);
+    }
   },
 
   async uploadFile(file: File): Promise<DocumentInfo> {

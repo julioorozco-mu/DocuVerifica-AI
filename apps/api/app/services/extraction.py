@@ -21,7 +21,7 @@ MIN_WORDS = 500
 MAX_WORDS = 1200
 OVERLAP_WORDS = 125
 # Umbral mínimo de palabras para considerar que un documento tiene texto
-OCR_THRESHOLD_WORDS = 50
+OCR_THRESHOLD_WORDS = 10
 
 
 @dataclass

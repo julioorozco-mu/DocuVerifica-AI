@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Integer, BIGINT, ForeignKey, DateTime, Text, func
+from sqlalchemy import Column, String, Integer, BIGINT, ForeignKey, DateTime, Text, func, Boolean, Float
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ENUM
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -52,6 +52,7 @@ class Document(Base):
     uploader = relationship("Profile", back_populates="documents")
     verdict = relationship("HumanVerdict", back_populates="document", uselist=False)
     chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan", order_by="DocumentChunk.chunk_index")
+    ai_results = relationship("AIReviewResult", back_populates="document", cascade="all, delete-orphan")
 
 
 class HumanVerdict(Base):
@@ -107,3 +108,46 @@ class DocumentChunk(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     document = relationship("Document", back_populates="chunks")
+
+
+class ReviewCriterion(Base):
+    __tablename__ = "review_criteria"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    rule_type = Column(
+        ENUM("rule", "semantic", "ai", "rule_then_ai", name="criterion_rule_type", create_type=False),
+        nullable=False,
+        default="ai"
+    )
+    is_active = Column(Boolean, default=True)
+    # Propiedad del criterio: null = global, UUID = personal del revisor
+    reviewer_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=True)
+    # Tipo de proyecto para agrupar criterios (Ej. "Microcredencial", "Diplomado")
+    project_type = Column(String(100), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    reviewer = relationship("Profile")
+
+
+class AIReviewResult(Base):
+    __tablename__ = "ai_review_results"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
+    criterion_id = Column(UUID(as_uuid=True), ForeignKey("review_criteria.id", ondelete="CASCADE"), nullable=False)
+    status = Column(
+        ENUM("cumple", "no_cumple", "no_encontrado", "requiere_revision", name="ai_review_status", create_type=False),
+        nullable=False,
+    )
+    confidence = Column(Float, nullable=False, default=0.0)
+    evidence = Column(Text, nullable=True)
+    page_number = Column(Integer, nullable=True)
+    explanation = Column(Text, nullable=True)
+    human_action_required = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    document = relationship("Document", back_populates="ai_results")
+    criterion = relationship("ReviewCriterion")

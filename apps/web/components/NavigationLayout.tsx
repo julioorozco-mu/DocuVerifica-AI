@@ -13,7 +13,8 @@ import {
   User, 
   Loader2,
   Menu,
-  X
+  X,
+  ListChecks
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -69,6 +70,7 @@ export default function NavigationLayout({ children }: NavigationLayoutProps) {
     { name: "Panel Control", href: "/dashboard", icon: LayoutDashboard },
     { name: "Bandeja de Documentos", href: "/documents", icon: FileText },
     { name: "Cargar Documento", href: "/documents/upload", icon: Upload },
+    { name: "Criterios IA", href: "/criteria", icon: ListChecks },
   ];
 
   return (

@@ -9,3 +9,5 @@ python-jose[cryptography]>=3.3.0
 bcrypt>=4.0.0
 httpx>=0.27.0
 docling>=2.31.0
+rq>=1.16.0
+redis>=5.0.1

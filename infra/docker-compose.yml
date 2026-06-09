@@ -2,5 +2,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: rd-ai-redis
-    # Fase 6: servicio interno para cola RQ. No publicar 6379 a la red/VPN.
+    # Exponemos a localhost para desarrollo y worker local
+    ports:
+      - "127.0.0.1:6379:6379"
     restart: always
