@@ -346,7 +346,14 @@ def extract_document_text(
                 f"El documento contiene solo {result.total_words} palabras. "
                 "Probablemente es un PDF escaneado que requiere OCR."
             )
-            message = "Documento marcado como candidato a OCR. Texto insuficiente detectado."
+            message = "Documento marcado para procesamiento OCR en background."
+            
+            # Encolar tarea de OCR
+            from app.queue_service import get_queue
+            from app.services.ocr_service import process_document_ocr
+            q = get_queue()
+            q.enqueue(process_document_ocr, doc.id)
+            
         else:
             doc.status = "ready_for_review"
             doc.error_message = None

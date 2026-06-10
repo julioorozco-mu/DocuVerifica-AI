@@ -17,9 +17,10 @@ interface PDFViewerProps {
   fileData: Uint8Array;
   currentPage?: number;
   onPageChange?: (page: number) => void;
+  highlightText?: string;
 }
 
-export default function PDFViewer({ fileData, currentPage, onPageChange }: PDFViewerProps) {
+export default function PDFViewer({ fileData, currentPage, onPageChange, highlightText }: PDFViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
@@ -116,6 +117,39 @@ export default function PDFViewer({ fileData, currentPage, onPageChange }: PDFVi
 
         await renderTask.promise;
         renderTaskRef.current = null;
+
+        // --- LÓGICA DE RESALTADO DE TEXTO ---
+        if (highlightText) {
+          try {
+            const textContent = await page.getTextContent();
+            const searchStr = highlightText.toLowerCase();
+            const pdfjs = await import("pdfjs-dist");
+
+            context.fillStyle = "rgba(250, 204, 21, 0.4)"; // bg-yellow-400/40
+
+            // Hacemos una búsqueda simple por fragmentos
+            // Nota: En PDFs el texto a veces viene muy fragmentado
+            for (const item of textContent.items) {
+              if ('str' in item && item.str) {
+                if (item.str.toLowerCase().includes(searchStr) || searchStr.includes(item.str.toLowerCase())) {
+                  const tx = pdfjs.Util.transform(viewport.transform, item.transform);
+                  const fontHeight = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3]);
+                  
+                  // Dibujar rectángulo resaltador
+                  context.fillRect(
+                    tx[4], 
+                    tx[5] - fontHeight, 
+                    item.width * scale, 
+                    fontHeight * 1.2
+                  );
+                }
+              }
+            }
+          } catch (e) {
+            console.error("Error highlighting text:", e);
+          }
+        }
+
       } catch (err: unknown) {
         const errorName = err instanceof Error ? err.name : "";
         if (errorName !== "RenderingCancelledException") {
@@ -125,7 +159,7 @@ export default function PDFViewer({ fileData, currentPage, onPageChange }: PDFVi
     };
 
     renderPage();
-  }, [pdf, pageNumber, scale]);
+  }, [pdf, pageNumber, scale, highlightText]);
 
   const handlePrevPage = () => {
     if (pageNumber > 1) {

@@ -14,6 +14,7 @@ interface CriteriaEditorProps {
   formName: string;
   formDescription: string;
   formRuleType: string;
+  formRulePattern: string;
   formProjectType: string;
   formIsActive: boolean;
   saving: boolean;
@@ -21,6 +22,7 @@ interface CriteriaEditorProps {
   onNameChange: (v: string) => void;
   onDescriptionChange: (v: string) => void;
   onRuleTypeChange: (v: string) => void;
+  onRulePatternChange: (v: string) => void;
   onProjectTypeChange: (v: string) => void;
   onIsActiveChange: (v: boolean) => void;
   onSave: () => void;
@@ -32,6 +34,7 @@ export function CriteriaEditor({
   formName,
   formDescription,
   formRuleType,
+  formRulePattern,
   formProjectType,
   formIsActive,
   saving,
@@ -39,6 +42,7 @@ export function CriteriaEditor({
   onNameChange,
   onDescriptionChange,
   onRuleTypeChange,
+  onRulePatternChange,
   onProjectTypeChange,
   onIsActiveChange,
   onSave,
@@ -158,6 +162,25 @@ export function CriteriaEditor({
             />
           </div>
         </div>
+
+        {/* Campo Expresión Regular (solo si aplica) */}
+        {(formRuleType === "rule" || formRuleType === "rule_then_ai") && (
+          <div className="flex flex-col gap-2 p-4 bg-indigo-950/10 border border-indigo-500/20 rounded-xl">
+            <Label htmlFor="rule-pattern" className="text-slate-300 text-xs font-semibold">
+              Patrón de Búsqueda (Regex o Palabra Clave)
+            </Label>
+            <p className="text-[10px] text-slate-500 leading-relaxed -mt-1">
+              Ejemplo para folio: <code>FOLIO-\d+</code>. El motor buscará este patrón exacto antes de llamar a la IA.
+            </p>
+            <Input
+              id="rule-pattern"
+              value={formRulePattern}
+              onChange={(e) => onRulePatternChange(e.target.value)}
+              placeholder="Ej: ^CURP:[A-Z0-9]{18}$"
+              className="bg-slate-900/60 border-slate-800 text-slate-100 font-mono rounded-xl h-10 text-sm placeholder:text-slate-600"
+            />
+          </div>
+        )}
 
         {/* Acciones */}
         <div className="flex items-center gap-3 pt-2">

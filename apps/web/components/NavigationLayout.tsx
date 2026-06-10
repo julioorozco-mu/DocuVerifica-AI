@@ -14,7 +14,8 @@ import {
   Loader2,
   Menu,
   X,
-  ListChecks
+  ListChecks,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -66,6 +67,8 @@ export default function NavigationLayout({ children }: NavigationLayoutProps) {
     );
   }
 
+  const isReviewMode = pathname.endsWith('/review');
+
   const menuItems = [
     { name: "Panel Control", href: "/dashboard", icon: LayoutDashboard },
     { name: "Bandeja de Documentos", href: "/documents", icon: FileText },
@@ -73,22 +76,26 @@ export default function NavigationLayout({ children }: NavigationLayoutProps) {
     { name: "Criterios IA", href: "/criteria", icon: ListChecks },
   ];
 
+  if (profile?.role === "admin") {
+    menuItems.push({ name: "Gestión de Usuarios", href: "/admin/users", icon: Users });
+  }
+
   return (
     <div className="flex-1 flex min-h-screen bg-[#080b11]">
       {/* Sidebar para pantallas grandes */}
-      <aside className="hidden md:flex flex-col w-64 bg-[#0d121f] border-r border-slate-800/80 z-20">
+      <aside className={`hidden md:flex flex-col bg-[#0d121f] border-r border-slate-800/80 z-20 transition-all duration-300 ${isReviewMode ? 'w-16' : 'w-64'}`}>
         {/* Cabecera Sidebar */}
-        <div className="h-16 flex items-center px-6 border-b border-slate-800/60 bg-[#0d121f]/50">
-          <div className="flex items-center gap-2">
-            <div className="bg-indigo-600/10 border border-indigo-500/25 p-2 rounded-xl text-indigo-400">
+        <div className="h-16 flex items-center justify-center border-b border-slate-800/60 bg-[#0d121f]/50 px-4">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <div className="bg-indigo-600/10 border border-indigo-500/25 p-2 rounded-xl text-indigo-400 flex-shrink-0">
               <ShieldCheck className="w-5 h-5" />
             </div>
-            <span className="font-bold text-sm tracking-wide text-white">REVISIÓN DOCS AI</span>
+            {!isReviewMode && <span className="font-bold text-sm tracking-wide text-white whitespace-nowrap">REVISIÓN DOCS AI</span>}
           </div>
         </div>
 
         {/* Enlaces de Navegación */}
-        <nav className="flex-1 px-4 py-6 space-y-1">
+        <nav className={`flex-1 py-6 space-y-2 overflow-hidden ${isReviewMode ? 'px-2' : 'px-4'}`}>
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -96,38 +103,52 @@ export default function NavigationLayout({ children }: NavigationLayoutProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                title={isReviewMode ? item.name : undefined}
+                className={`flex items-center gap-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${isReviewMode ? 'justify-center px-0' : 'px-4'} ${
                   isActive 
                     ? "bg-gradient-to-r from-indigo-900/40 to-indigo-950/20 border border-indigo-500/20 text-indigo-300 shadow-md shadow-indigo-950/20" 
                     : "text-slate-400 hover:bg-slate-800/40 hover:text-slate-200"
                 }`}
               >
-                <Icon className={`w-5 h-5 ${isActive ? "text-indigo-400" : ""}`} />
-                {item.name}
+                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-indigo-400" : ""}`} />
+                {!isReviewMode && <span className="whitespace-nowrap">{item.name}</span>}
               </Link>
             );
           })}
         </nav>
 
         {/* Perfil del Usuario en la base de la Sidebar */}
-        <div className="p-4 border-t border-slate-800/60 bg-[#0d121f]/40">
-          <div className="flex items-center gap-3 px-2 py-2 mb-2">
-            <div className="bg-slate-800 p-2.5 rounded-xl border border-slate-700/50 text-slate-300">
-              <User className="w-4 h-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{profile?.full_name}</p>
-              <p className="text-xs text-indigo-400/90 font-medium capitalize">{profile?.role}</p>
-            </div>
-          </div>
-          <Button
-            onClick={handleLogout}
-            variant="ghost"
-            className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-950/20 rounded-xl cursor-pointer"
-          >
-            <LogOut className="w-4 h-4 mr-3" />
-            Cerrar Sesión
-          </Button>
+        <div className={`p-4 border-t border-slate-800/60 bg-[#0d121f]/40 overflow-hidden`}>
+          {!isReviewMode ? (
+            <>
+              <div className="flex items-center gap-3 px-2 py-2 mb-2">
+                <div className="bg-slate-800 p-2.5 rounded-xl border border-slate-700/50 text-slate-300 flex-shrink-0">
+                  <User className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">{profile?.full_name}</p>
+                  <p className="text-xs text-indigo-400/90 font-medium capitalize">{profile?.role}</p>
+                </div>
+              </div>
+              <Button
+                onClick={handleLogout}
+                variant="ghost"
+                className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-950/20 rounded-xl cursor-pointer"
+              >
+                <LogOut className="w-4 h-4 mr-3" />
+                Cerrar Sesión
+              </Button>
+            </>
+          ) : (
+             <Button
+                onClick={handleLogout}
+                variant="ghost"
+                title="Cerrar Sesión"
+                className="w-full justify-center text-red-400 hover:text-red-300 hover:bg-red-950/20 rounded-xl cursor-pointer p-0 h-10"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
+          )}
         </div>
       </aside>
 

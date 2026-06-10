@@ -23,9 +23,11 @@ import {
 interface AISimulatorProps {
   criterionName: string;
   criterionDescription: string;
+  ruleType: string;
+  rulePattern: string;
 }
 
-export function AISimulator({ criterionName, criterionDescription }: AISimulatorProps) {
+export function AISimulator({ criterionName, criterionDescription, ruleType, rulePattern }: AISimulatorProps) {
   const [textFragment, setTextFragment] = useState("");
   const [modelName, setModelName] = useState("qwen2.5:3b");
   const [simulating, setSimulating] = useState(false);
@@ -48,6 +50,8 @@ export function AISimulator({ criterionName, criterionDescription }: AISimulator
       const data = await api.post<AISimulationResult>("/criteria/simulate", {
         criterion_name: criterionName,
         criterion_description: criterionDescription,
+        rule_type: ruleType,
+        rule_pattern: rulePattern,
         text_fragment: textFragment,
         model_name: modelName,
       });

@@ -21,6 +21,7 @@ export default function CriteriaPage() {
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formRuleType, setFormRuleType] = useState<string>("ai");
+  const [formRulePattern, setFormRulePattern] = useState("");
   const [formProjectType, setFormProjectType] = useState("");
   const [formIsActive, setFormIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -47,6 +48,7 @@ export default function CriteriaPage() {
     setFormName(criterion.name);
     setFormDescription(criterion.description || "");
     setFormRuleType(criterion.rule_type);
+    setFormRulePattern(criterion.rule_pattern || "");
     setFormProjectType(criterion.project_type || "");
     setFormIsActive(criterion.is_active);
     setMessage(null);
@@ -59,6 +61,7 @@ export default function CriteriaPage() {
     setFormName("");
     setFormDescription("");
     setFormRuleType("ai");
+    setFormRulePattern("");
     setFormProjectType("");
     setFormIsActive(true);
     setMessage(null);
@@ -78,6 +81,7 @@ export default function CriteriaPage() {
       name: formName.trim(),
       description: formDescription.trim(),
       rule_type: formRuleType,
+      rule_pattern: formRulePattern.trim() || null,
       project_type: formProjectType.trim() || null,
       is_active: formIsActive,
     };
@@ -186,6 +190,7 @@ export default function CriteriaPage() {
                   formName={formName}
                   formDescription={formDescription}
                   formRuleType={formRuleType}
+                  formRulePattern={formRulePattern}
                   formProjectType={formProjectType}
                   formIsActive={formIsActive}
                   saving={saving}
@@ -193,6 +198,7 @@ export default function CriteriaPage() {
                   onNameChange={setFormName}
                   onDescriptionChange={setFormDescription}
                   onRuleTypeChange={setFormRuleType}
+                  onRulePatternChange={setFormRulePattern}
                   onProjectTypeChange={setFormProjectType}
                   onIsActiveChange={setFormIsActive}
                   onSave={handleSave}
@@ -204,6 +210,8 @@ export default function CriteriaPage() {
                 <AISimulator
                   criterionName={formName}
                   criterionDescription={formDescription}
+                  ruleType={formRuleType}
+                  rulePattern={formRulePattern}
                 />
               </>
             ) : (

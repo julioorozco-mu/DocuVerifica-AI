@@ -18,6 +18,8 @@ def get_document_context(db: Session, document_id: UUID) -> str:
         context.append(chunk.text)
     return "\n".join(context)
 
+import re
+
 def build_criterion_prompt(criterion_name: str, criterion_description: str, document_context: str) -> str:
     """Construye el prompt de evaluación de un criterio. Reutilizable por revisión y simulación."""
     return f"""
@@ -39,12 +41,74 @@ Instrucciones:
 6. Asigna un nivel de confianza (0.0 a 1.0) que refleje la certeza de tu evaluación.
 """
 
+def evaluate_regex_rule(pattern: str, text: str) -> AIReviewOutput:
+    """Evalúa un patrón regex directamente sobre el texto."""
+    if not pattern:
+        return AIReviewOutput(
+            status="error",
+            confidence=0.0,
+            evidence="Patrón Regex no definido",
+            page_number=None,
+            explanation="El criterio requiere una evaluación por regla pero no tiene patrón definido.",
+            human_action_required=True
+        )
+    
+    try:
+        match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
+        if match:
+            return AIReviewOutput(
+                status="cumple",
+                confidence=1.0,
+                evidence=match.group(0),
+                page_number=1, # Se podría buscar la página exacta iterando los chunks
+                explanation=f"Se encontró una coincidencia exacta con la regla: {pattern}",
+                human_action_required=False
+            )
+        else:
+            return AIReviewOutput(
+                status="no_cumple",
+                confidence=1.0,
+                evidence="",
+                page_number=None,
+                explanation=f"No se encontró coincidencia en el documento para el patrón: {pattern}",
+                human_action_required=False
+            )
+    except re.error as e:
+        return AIReviewOutput(
+            status="requiere_revision",
+            confidence=0.0,
+            evidence="",
+            page_number=None,
+            explanation=f"Error en la expresión regular: {str(e)}",
+            human_action_required=True
+        )
+
 async def review_single_criterion(criterion: ReviewCriterion, document_context: str, model_name: str = None) -> AIReviewOutput:
+    # Si es solo regla
+    if criterion.rule_type == "rule":
+        return evaluate_regex_rule(criterion.rule_pattern, document_context)
+    
+    # Si es regla seguida de IA
+    if criterion.rule_type == "rule_then_ai":
+        rule_result = evaluate_regex_rule(criterion.rule_pattern, document_context)
+        if rule_result.status == "no_cumple":
+            return rule_result # Si la regla estricta no se cumple, rechazar inmediatamente
+        # Si se cumple la regla estricta, la IA revisa la semántica
+    
+    # Si es IA pura o pasó la regla de rule_then_ai
     prompt = build_criterion_prompt(criterion.name, criterion.description, document_context)
     return await generate_structured_output(prompt, AIReviewOutput, model_name)
 
-async def simulate_criterion(criterion_name: str, criterion_description: str, text_fragment: str, model_name: str = None) -> AIReviewOutput:
+async def simulate_criterion(criterion_name: str, criterion_description: str, rule_type: str, rule_pattern: str, text_fragment: str, model_name: str = None) -> AIReviewOutput:
     """Simula la evaluación de un criterio contra un fragmento de texto sin persistir en BD."""
+    if rule_type == "rule":
+        return evaluate_regex_rule(rule_pattern, text_fragment)
+        
+    if rule_type == "rule_then_ai":
+        rule_result = evaluate_regex_rule(rule_pattern, text_fragment)
+        if rule_result.status == "no_cumple":
+            return rule_result
+
     prompt = build_criterion_prompt(criterion_name, criterion_description, text_fragment)
     return await generate_structured_output(prompt, AIReviewOutput, model_name)
 
@@ -101,6 +165,18 @@ async def async_process_document_ai_review(document_id: UUID, model_name: str = 
                 raise e
 
         document.status = "ai_review_done"
+        
+        from app.models import AuditLog
+        audit = AuditLog(
+            action="ai_review_completed",
+            user_id=None,
+            details={
+                "document_id": str(document.id),
+                "filename": document.filename
+            }
+        )
+        db.add(audit)
+        
         db.commit()
 
     except Exception as e:

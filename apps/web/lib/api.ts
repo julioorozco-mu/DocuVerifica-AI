@@ -97,6 +97,7 @@ export interface ReviewCriterion {
   name: string;
   description?: string;
   rule_type: "rule" | "semantic" | "ai" | "rule_then_ai";
+  rule_pattern?: string;
   is_active: boolean;
   project_type?: string;
   reviewer_id?: string;
@@ -112,6 +113,27 @@ export interface AISimulationResult {
   page_number?: number;
   explanation: string;
   human_action_required: boolean;
+}
+
+export interface DashboardMetrics {
+  metrics: {
+    total_documents: number;
+    pending_documents: number;
+    error_documents: number;
+    approved_documents: number;
+    rejected_documents: number;
+    revision_required_documents: number;
+  };
+  recent_activity: {
+    id: string;
+    filename: string;
+    status: string;
+    updated_at: string | null;
+  }[];
+  reviewer_stats: {
+    name: string;
+    reviews: number;
+  }[];
 }
 
 // Helper para obtener headers con token

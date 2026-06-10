@@ -65,11 +65,20 @@ def create_criterion(
         name=body.name,
         description=body.description,
         rule_type=body.rule_type,
+        rule_pattern=body.rule_pattern,
         is_active=body.is_active,
         project_type=body.project_type,
         reviewer_id=reviewer_id,
     )
     db.add(criterion)
+    
+    audit = AuditLog(
+        action="criteria_updated",
+        user_id=current_user.id,
+        details={"criterion_name": body.name, "action": "created"}
+    )
+    db.add(audit)
+
     db.commit()
     db.refresh(criterion)
     return criterion
@@ -93,6 +102,13 @@ def update_criterion(
     update_data = body.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(criterion, field, value)
+
+    audit = AuditLog(
+        action="criteria_updated",
+        user_id=current_user.id,
+        details={"criterion_name": criterion.name, "criterion_id": str(criterion.id), "action": "updated"}
+    )
+    db.add(audit)
 
     db.commit()
     db.refresh(criterion)
@@ -132,6 +148,8 @@ async def simulate_criterion_endpoint(
         result = await simulate_criterion(
             criterion_name=body.criterion_name,
             criterion_description=body.criterion_description,
+            rule_type=body.rule_type,
+            rule_pattern=body.rule_pattern or "",
             text_fragment=body.text_fragment,
             model_name=body.model_name,
         )

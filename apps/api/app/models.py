@@ -121,6 +121,7 @@ class ReviewCriterion(Base):
         nullable=False,
         default="ai"
     )
+    rule_pattern = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True)
     # Propiedad del criterio: null = global, UUID = personal del revisor
     reviewer_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=True)

@@ -19,6 +19,10 @@ class LoginRequest(BaseModel):
 
 
 # --- Perfiles de Usuario ---
+class ProfileUpdate(BaseModel):
+    full_name: Optional[str] = None
+    role: Optional[str] = Field(default=None, pattern="^(admin|revisor)$")
+
 class ProfileResponse(BaseModel):
     id: UUID
     email: str
@@ -110,6 +114,7 @@ class ReviewCriterionBase(BaseModel):
     name: str
     description: Optional[str] = None
     rule_type: str = Field(default="ai", pattern="^(rule|semantic|ai|rule_then_ai)$")
+    rule_pattern: Optional[str] = None
     is_active: bool = True
     project_type: Optional[str] = None
 
@@ -120,6 +125,7 @@ class ReviewCriterionUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     rule_type: Optional[str] = Field(default=None, pattern="^(rule|semantic|ai|rule_then_ai)$")
+    rule_pattern: Optional[str] = None
     is_active: Optional[bool] = None
     project_type: Optional[str] = None
 
@@ -137,6 +143,8 @@ class AISimulationRequest(BaseModel):
     """Permite probar un criterio contra un fragmento de texto sin guardarlo en BD."""
     criterion_name: str
     criterion_description: str
+    rule_type: str = Field(default="ai")
+    rule_pattern: Optional[str] = None
     text_fragment: str
     model_name: Optional[str] = None
 

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import NavigationLayout from "@/components/NavigationLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { api, DocumentInfo } from "@/lib/api";
+import { api, DashboardMetrics } from "@/lib/api";
 import { 
   FileText, 
   Upload, 
@@ -13,34 +13,37 @@ import {
   History,
   ArrowRight,
   Cpu,
-  Layers
+  Layers,
+  Users
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardClient() {
-  const [documents, setDocuments] = useState<DocumentInfo[]>([]);
+  const [data, setData] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchDocs = async () => {
+    const fetchMetrics = async () => {
       try {
-        const data = await api.get<DocumentInfo[]>("/documents");
-        setDocuments(data);
+        const result = await api.get<DashboardMetrics>("/dashboard/metrics");
+        setData(result);
       } catch (err) {
-        console.error("Error al cargar documentos:", err);
+        console.error("Error al cargar métricas:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchDocs();
+    fetchMetrics();
   }, []);
 
-  // Métricas dinámicas
-  const total = documents.length;
-  const pending = documents.filter(d => d.status !== "human_review_done" && d.status !== "error").length;
-  const completed = documents.filter(d => d.status === "human_review_done").length;
-  const errors = documents.filter(d => d.status === "error").length;
+  // Métricas dinámicas (fallback a 0 si no hay data)
+  const total = data?.metrics?.total_documents || 0;
+  const pending = data?.metrics?.pending_documents || 0;
+  const completed = data?.metrics?.approved_documents || 0;
+  const errors = data?.metrics?.error_documents || 0;
+  const recentDocs = data?.recent_activity || [];
+  const reviewerStats = data?.reviewer_stats || [];
 
   return (
     <NavigationLayout>
@@ -199,14 +202,14 @@ export default function DashboardClient() {
                   <div className="w-8 h-8 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
                   <span className="text-sm font-medium">Cargando registros del sistema...</span>
                 </div>
-              ) : documents.length === 0 ? (
+              ) : recentDocs.length === 0 ? (
                 <div className="text-center py-12 text-slate-500 text-sm flex flex-col items-center gap-2">
                   <FileText className="w-8 h-8 text-slate-700" />
                   No hay documentos procesados aún en el almacenamiento local.
                 </div>
               ) : (
                 <div className="divide-y divide-slate-800/60">
-                  {documents.slice(0, 5).map((doc) => (
+                  {recentDocs.map((doc) => (
                     <Link href={`/documents/${doc.id}`} key={doc.id} className="block group">
                       <div className="p-4 flex items-center justify-between hover:bg-slate-800/40 transition-colors duration-200">
                         <div className="flex items-center gap-4 min-w-0">
@@ -239,6 +242,46 @@ export default function DashboardClient() {
               )}
             </CardContent>
           </Card>
+          
+          {/* Card 4: Productividad (solo admin) */}
+          {reviewerStats.length > 0 && (
+            <Card className="md:col-span-4 bg-slate-900/60 border-slate-800/80 backdrop-blur-xl shadow-xl mt-2">
+              <CardHeader className="flex flex-row items-center justify-between pb-6 border-b border-slate-800/60">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-slate-800/80 rounded-xl">
+                    <Users className="w-5 h-5 text-slate-300" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg text-white font-bold tracking-wide">Productividad de Revisores</CardTitle>
+                    <CardDescription className="text-slate-400 mt-1">
+                      Reporte de documentos revisados por usuario.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {reviewerStats.map((stat, i) => (
+                    <div key={i} className="bg-slate-950/50 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
+                          <Users className="w-5 h-5 text-indigo-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-white">{stat.name}</p>
+                          <p className="text-xs text-slate-400">Revisor</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-emerald-400">{stat.reviews}</p>
+                        <p className="text-[10px] text-slate-500 font-medium">Dictámenes</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </NavigationLayout>
