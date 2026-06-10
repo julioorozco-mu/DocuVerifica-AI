@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
@@ -156,8 +156,13 @@ export const api = {
       headers: getHeaders(),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Error desconocido" }));
-      throw new Error(parseDetail(err.detail) || `Error HTTP ${res.status}`);
+      let errData;
+      try {
+        errData = await res.json();
+      } catch (e) {
+        throw new Error(`Error del servidor (HTTP ${res.status}): Posible tiempo de espera agotado al conectar con la IA.`);
+      }
+      throw new Error(parseDetail(errData.detail) || `Error HTTP ${res.status}`);
     }
     return res.json();
   },
