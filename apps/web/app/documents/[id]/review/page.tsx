@@ -5,7 +5,7 @@ import NavigationLayout from "@/components/NavigationLayout";
 import { AIReviewChecklist } from "@/components/documents/AIReviewChecklist";
 import dynamic from "next/dynamic";
 const PDFViewer = dynamic(() => import("@/components/PDFViewer"), { ssr: false });
-import { api, DocumentInfo, DocumentChunk, HumanVerdict, getErrorMessage } from "@/lib/api";
+import { api, DocumentInfo, DocumentChunk, HumanVerdict, getErrorMessage, AIReviewResult } from "@/lib/api";
 import { 
   CheckCircle, 
   XCircle, 
@@ -47,6 +47,8 @@ export default function DocumentReviewPage({ params }: WorkspaceProps) {
 
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [highlightText, setHighlightText] = useState<string>("");
+  const [highlightStatus, setHighlightStatus] = useState<string>("default");
+  const [allEvidences, setAllEvidences] = useState<AIReviewResult[]>([]);
   const [fileState, setFileState] = useState<FileState | null>(null);
   const isPdfDocument = document?.filename.toLowerCase().endsWith(".pdf") ?? false;
 
@@ -209,6 +211,12 @@ export default function DocumentReviewPage({ params }: WorkspaceProps) {
                 currentPage={currentPage}
                 onPageChange={setCurrentPage}
                 highlightText={highlightText}
+                highlightStatus={highlightStatus}
+                allEvidences={allEvidences}
+                onClearHighlight={() => {
+                  setHighlightText("");
+                  setHighlightStatus("default");
+                }}
               />
             ) : fileError ? (
               <div className="flex flex-col items-center justify-center h-full text-slate-400 px-6 text-center">
@@ -232,15 +240,18 @@ export default function DocumentReviewPage({ params }: WorkspaceProps) {
              </div>
              <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                 <AIReviewChecklist 
-                  documentId={docId} 
-                  onEvidenceClick={(pageNumber, text) => {
+                  documentId={docId}
+                  onResultsLoaded={setAllEvidences}
+                  onEvidenceClick={(pageNumber, text, status) => {
                     if (pageNumber && isPdfDocument) {
                       setCurrentPage(pageNumber);
                     }
                     if (text && text.trim().length > 5 && isPdfDocument) {
                        setHighlightText(text.trim());
+                       setHighlightStatus(status || "default");
                     } else {
                        setHighlightText("");
+                       setHighlightStatus("default");
                     }
                   }} 
                 />

@@ -18,9 +18,12 @@ interface PDFViewerProps {
   currentPage?: number;
   onPageChange?: (page: number) => void;
   highlightText?: string;
+  highlightStatus?: string;
+  allEvidences?: { evidence?: string; status: string; page_number?: number | null }[];
+  onClearHighlight?: () => void;
 }
 
-export default function PDFViewer({ fileData, currentPage, onPageChange, highlightText }: PDFViewerProps) {
+export default function PDFViewer({ fileData, currentPage, onPageChange, highlightText, highlightStatus, allEvidences, onClearHighlight }: PDFViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
@@ -118,36 +121,72 @@ export default function PDFViewer({ fileData, currentPage, onPageChange, highlig
         await renderTask.promise;
         renderTaskRef.current = null;
 
-        // --- LÓGICA DE RESALTADO DE TEXTO ---
-        if (highlightText) {
-          try {
-            const textContent = await page.getTextContent();
-            const searchStr = highlightText.toLowerCase();
-            const pdfjs = await import("pdfjs-dist");
+        // --- LÓGICA DE RESALTADO DE TEXTO MÚLTIPLE ---
+        try {
+          const evidencesToDraw = allEvidences || [];
+          const textContent = await page.getTextContent();
+          const pdfjs = await import("pdfjs-dist");
+          
+          let firstMatchY: number | null = null;
+          
+          const getColor = (status: string, isActive: boolean) => {
+             let color = "rgba(250, 204, 21, 0.4)"; // amarillo default
+             if (status === "cumple") color = "rgba(74, 222, 128, 0.4)"; // verde
+             else if (status === "no_cumple") color = "rgba(248, 113, 113, 0.4)"; // rojo
+             
+             if (highlightText && !isActive) {
+               return color.replace("0.4)", "0.15)"); // atenuar los no seleccionados
+             }
+             if (highlightText && isActive) {
+               return color.replace("0.4)", "0.65)"); // destacar el seleccionado
+             }
+             return color;
+          };
 
-            context.fillStyle = "rgba(250, 204, 21, 0.4)"; // bg-yellow-400/40
+          for (const ev of evidencesToDraw) {
+            if (!ev.evidence) continue;
+            // Filtramos si la evidencia pertenece a otra página
+            if (ev.page_number && ev.page_number !== pageNumber) continue;
 
-            // Hacemos una búsqueda simple por fragmentos
-            // Nota: En PDFs el texto a veces viene muy fragmentado
+            const searchStr = ev.evidence.toLowerCase().trim();
+            if (searchStr.length < 5) continue;
+
+            const isActive = highlightText ? searchStr === highlightText.toLowerCase().trim() : false;
+            context.fillStyle = getColor(ev.status, isActive);
+
             for (const item of textContent.items) {
               if ('str' in item && item.str) {
-                if (item.str.toLowerCase().includes(searchStr) || searchStr.includes(item.str.toLowerCase())) {
+                const itemStr = item.str.toLowerCase();
+                if (itemStr.includes(searchStr) || (searchStr.includes(itemStr) && itemStr.trim().length > 4)) {
                   const tx = pdfjs.Util.transform(viewport.transform, item.transform);
                   const fontHeight = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3]);
+                  const drawY = tx[5] - fontHeight;
                   
-                  // Dibujar rectángulo resaltador
                   context.fillRect(
                     tx[4], 
-                    tx[5] - fontHeight, 
+                    drawY, 
                     item.width * scale, 
                     fontHeight * 1.2
                   );
+
+                  if (isActive && firstMatchY === null) {
+                    firstMatchY = drawY;
+                  }
                 }
               }
             }
-          } catch (e) {
-            console.error("Error highlighting text:", e);
           }
+
+          // Hacer scroll hacia la coincidencia seleccionada
+          if (highlightText && firstMatchY !== null && containerRef.current) {
+            const scrollTargetY = Math.max(0, firstMatchY - 50);
+            containerRef.current.scrollTo({
+              top: scrollTargetY,
+              behavior: "smooth"
+            });
+          }
+        } catch (e) {
+          console.error("Error highlighting text:", e);
         }
 
       } catch (err: unknown) {
@@ -159,7 +198,7 @@ export default function PDFViewer({ fileData, currentPage, onPageChange, highlig
     };
 
     renderPage();
-  }, [pdf, pageNumber, scale, highlightText]);
+  }, [pdf, pageNumber, scale, highlightText, highlightStatus, allEvidences]);
 
   const handlePrevPage = () => {
     if (pageNumber > 1) {
@@ -281,9 +320,12 @@ export default function PDFViewer({ fileData, currentPage, onPageChange, highlig
           </div>
         )}
 
-        <div className={`shadow-2xl border border-slate-900 rounded bg-white transition-opacity duration-300 ${
-          loading || error ? "opacity-0 h-0 overflow-hidden" : "opacity-100"
-        }`}>
+        <div 
+          className={`shadow-2xl border border-slate-900 rounded bg-white transition-opacity duration-300 ${onClearHighlight ? 'cursor-pointer' : ''} ${
+            loading || error ? "opacity-0 h-0 overflow-hidden" : "opacity-100"
+          }`}
+          onClick={onClearHighlight}
+        >
           <canvas ref={canvasRef} />
         </div>
       </div>

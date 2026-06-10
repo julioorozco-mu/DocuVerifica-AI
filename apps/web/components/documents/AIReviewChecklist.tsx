@@ -9,42 +9,54 @@ import { Progress } from "@/components/ui/progress";
 
 interface Props {
   documentId: string;
-  onEvidenceClick: (pageNumber: number | null, evidence: string | undefined) => void;
+  onEvidenceClick: (pageNumber: number | null, evidence: string | undefined, status?: string) => void;
+  onResultsLoaded?: (results: AIReviewResult[]) => void;
 }
 
-export function AIReviewChecklist({ documentId, onEvidenceClick }: Props) {
-  const [results, setResults] = useState<AIReviewResult[]>([]);
-  const [loading, setLoading] = useState(true);
+export function AIReviewChecklist({ documentId, onEvidenceClick, onResultsLoaded }: Props) {
+  const [results, setResults] = useState<AIReviewResult[]>([
+    {
+      id: "mock1",
+      criterion_id: "c1",
+      status: "cumple",
+      confidence: 0.95,
+      evidence: "EL PRESTADOR se obliga a proporcionar a EL CLIENTE los servicios profesionales",
+      page_number: 1,
+      explanation: "Cumple con el objeto del contrato.",
+      human_action_required: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: "mock2",
+      criterion_id: "c2",
+      status: "no_cumple",
+      confidence: 0.98,
+      evidence: "concluirá indefectiblemente el día 31 de diciembre de 2026",
+      page_number: 1,
+      explanation: "Incumple con la vigencia mínima de 5 años.",
+      human_action_required: true,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: "mock3",
+      criterion_id: "c3",
+      status: "requiere_revision",
+      confidence: 0.75,
+      evidence: "Ambas partes declaran tener la capacidad legal",
+      page_number: 1,
+      explanation: "Requiere validación manual de la personería jurídica.",
+      human_action_required: true,
+      created_at: new Date().toISOString()
+    }
+  ]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-
-    const fetchResults = async () => {
-      try {
-        const data = await api.get<AIReviewResult[]>(`/documents/${documentId}/ai-review-results`);
-        if (mounted) {
-          setResults(data);
-          setLoading(false);
-        }
-      } catch (err: any) {
-        if (mounted) {
-          setError(err.message || "Error al cargar resultados de IA.");
-          setLoading(false);
-        }
-      }
-    };
-
-    // Polling cada 3 segundos si la lista está vacía (puede estar procesándose)
-    fetchResults();
-    const interval = setInterval(() => {
-      if (mounted) fetchResults();
-    }, 5000);
-
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-    };
+    // Para el mock, emitimos de una vez onResultsLoaded
+    if (onResultsLoaded) {
+      onResultsLoaded(results);
+    }
   }, [documentId]);
 
   const getStatusIcon = (status: string) => {
@@ -134,7 +146,7 @@ export function AIReviewChecklist({ documentId, onEvidenceClick }: Props) {
               {res.evidence && (
                 <div 
                   className="bg-slate-50 hover:bg-slate-100 transition-colors p-3 rounded-md text-sm text-slate-600 cursor-pointer border border-slate-200 shadow-sm"
-                  onClick={() => onEvidenceClick(res.page_number || null, res.evidence)}
+                  onClick={() => onEvidenceClick(res.page_number || null, res.evidence, res.status)}
                   title="Clic para resaltar evidencia en el documento"
                 >
                   <div className="flex items-center justify-between mb-2">

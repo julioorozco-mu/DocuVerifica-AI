@@ -288,6 +288,12 @@ export default function DocumentWorkspacePage({ params }: WorkspaceProps) {
               </div>
             </div>
           </div>
+          <Link href={`/documents/${docId}/review`}>
+            <Button className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg hover:shadow-indigo-500/10 cursor-pointer gap-2">
+              <BrainCircuit className="w-4 h-4" />
+              Workspace de 3 Columnas
+            </Button>
+          </Link>
         </div>
 
         {/* Layout Profesional Workspace (2 Paneles) */}
