@@ -23,13 +23,15 @@ interface PDFViewerProps {
   onClearHighlight?: () => void;
 }
 
+import PDFThumbnail from "./PDFThumbnail";
+
 export default function PDFViewer({ fileData, currentPage, onPageChange, highlightText, highlightStatus, allEvidences, onClearHighlight }: PDFViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const [internalPageNumber, setInternalPageNumber] = useState(1);
   const [numPages, setNumPages] = useState(0);
-  const [scale, setScale] = useState(1.0);
+  const [scale, setScale] = useState(0.8);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const renderTaskRef = useRef<RenderTask | null>(null);
@@ -235,8 +237,48 @@ export default function PDFViewer({ fileData, currentPage, onPageChange, highlig
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0d121f] border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-      {/* Barra de Herramientas del Visor */}
+    <div className="flex flex-row h-full bg-[#0d121f] border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      
+      {/* Sidebar de Minimapa */}
+      {pdf && numPages > 0 && (
+        <div className="w-[120px] flex-shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col z-10">
+          <div className="p-3 text-[10px] uppercase font-bold text-slate-500 border-b border-slate-800 text-center tracking-wider bg-slate-950">
+            Minimapa
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-[#080b11]">
+            {Array.from({ length: numPages }, (_, i) => i + 1).map(pageNum => {
+              const pageEvidences = allEvidences?.filter(e => e.page_number === pageNum) || [];
+              const counts = { cumple: 0, no_cumple: 0, requiere_revision: 0 };
+              
+              pageEvidences.forEach(e => {
+                if (e.status === "cumple" || e.status === "no_cumple" || e.status === "requiere_revision") {
+                  counts[e.status]++;
+                }
+              });
+
+              const badges = [];
+              if (counts.cumple > 0) badges.push({ status: "cumple", count: counts.cumple });
+              if (counts.requiere_revision > 0) badges.push({ status: "requiere_revision", count: counts.requiere_revision });
+              if (counts.no_cumple > 0) badges.push({ status: "no_cumple", count: counts.no_cumple });
+
+              return (
+                <PDFThumbnail
+                  key={pageNum}
+                  pdf={pdf}
+                  pageNumber={pageNum}
+                  isActive={pageNum === pageNumber}
+                  badges={badges}
+                  onClick={(pg) => commitPageChange(pg)}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Contenedor Principal */}
+      <div className="flex-1 flex flex-col min-w-0 bg-[#0d121f]">
+        {/* Barra de Herramientas del Visor */}
       <div className="h-12 border-b border-slate-800/80 bg-[#0d121f]/80 backdrop-blur-sm px-4 flex items-center justify-between text-slate-200">
         <div className="flex items-center gap-1">
           <Button
@@ -301,7 +343,7 @@ export default function PDFViewer({ fileData, currentPage, onPageChange, highlig
       {/* Contenedor del Lienzo PDF */}
       <div 
         ref={containerRef} 
-        className="flex-1 overflow-auto p-4 flex justify-center items-start bg-[#080b11] custom-scrollbar"
+        className="flex-1 overflow-auto p-4 bg-[#080b11] custom-scrollbar text-center"
       >
         {loading && (
           <div className="flex flex-col items-center justify-center h-64 w-full">
@@ -321,14 +363,16 @@ export default function PDFViewer({ fileData, currentPage, onPageChange, highlig
         )}
 
         <div 
-          className={`shadow-2xl border border-slate-900 rounded bg-white transition-opacity duration-300 ${onClearHighlight ? 'cursor-pointer' : ''} ${
+          className={`inline-block mx-auto shadow-2xl border border-slate-900 rounded bg-white transition-opacity duration-300 ${onClearHighlight ? 'cursor-pointer' : ''} ${
             loading || error ? "opacity-0 h-0 overflow-hidden" : "opacity-100"
           }`}
+          style={{ minWidth: "fit-content" }}
           onClick={onClearHighlight}
         >
-          <canvas ref={canvasRef} />
+          <canvas ref={canvasRef} className="block" />
         </div>
       </div>
+    </div>
     </div>
   );
 }

@@ -14,50 +14,42 @@ interface Props {
 }
 
 export function AIReviewChecklist({ documentId, onEvidenceClick, onResultsLoaded }: Props) {
-  const [results, setResults] = useState<AIReviewResult[]>([
-    {
-      id: "mock1",
-      criterion_id: "c1",
-      status: "cumple",
-      confidence: 0.95,
-      evidence: "EL PRESTADOR se obliga a proporcionar a EL CLIENTE los servicios profesionales",
-      page_number: 1,
-      explanation: "Cumple con el objeto del contrato.",
-      human_action_required: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: "mock2",
-      criterion_id: "c2",
-      status: "no_cumple",
-      confidence: 0.98,
-      evidence: "concluirá indefectiblemente el día 31 de diciembre de 2026",
-      page_number: 1,
-      explanation: "Incumple con la vigencia mínima de 5 años.",
-      human_action_required: true,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: "mock3",
-      criterion_id: "c3",
-      status: "requiere_revision",
-      confidence: 0.75,
-      evidence: "Ambas partes declaran tener la capacidad legal",
-      page_number: 1,
-      explanation: "Requiere validación manual de la personería jurídica.",
-      human_action_required: true,
-      created_at: new Date().toISOString()
-    }
-  ]);
-  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState<AIReviewResult[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Para el mock, emitimos de una vez onResultsLoaded
-    if (onResultsLoaded) {
-      onResultsLoaded(results);
-    }
-  }, [documentId]);
+    let mounted = true;
+
+    const fetchResults = async () => {
+      try {
+        const data = await api.get<AIReviewResult[]>(`/documents/${documentId}/ai-review-results`);
+        if (mounted) {
+          setResults(data);
+          setLoading(false);
+          if (onResultsLoaded) {
+            onResultsLoaded(data);
+          }
+        }
+      } catch (err: any) {
+        if (mounted) {
+          setError(err.message || "Error al cargar resultados de IA.");
+          setLoading(false);
+        }
+      }
+    };
+
+    // Polling cada 5 segundos por si el documento aún se está procesando en backend
+    fetchResults();
+    const interval = setInterval(() => {
+      if (mounted) fetchResults();
+    }, 5000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [documentId, onResultsLoaded]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
