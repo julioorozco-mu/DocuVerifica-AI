@@ -64,6 +64,7 @@ export default function PDFThumbnail({ pdf, pageNumber, isActive, badges, onClic
         const renderContext = {
           canvasContext: context,
           viewport: viewport,
+          canvas: canvas,
         };
 
         const renderTask = page.render(renderContext);

@@ -177,3 +177,36 @@ class AIReviewOutput(BaseModel):
     page_number: Optional[int] = None
     explanation: str
     human_action_required: bool
+
+# --- Dashboard ---
+class DashboardTimeline(BaseModel):
+    date: str
+    pendientes: int
+    en_cola_ia: int
+    revisados: int
+
+class DashboardCategory(BaseModel):
+    name: str
+    value: int
+    color: str
+
+class RecentActivityItem(BaseModel):
+    id: str
+    filename: str
+    status: str
+    updated_at: Optional[str] = None
+    reviewer: Optional[str] = None
+    ai_status: Optional[str] = None
+    human_status: Optional[str] = None
+    document_type: Optional[str] = None
+
+class ReviewerStat(BaseModel):
+    name: str
+    reviews: int
+
+class DashboardMetricsResponse(BaseModel):
+    metrics: Dict[str, int]
+    recent_activity: list[RecentActivityItem]
+    reviewer_stats: list[ReviewerStat]
+    timeline: list[DashboardTimeline]
+    categories: list[DashboardCategory]

@@ -129,10 +129,25 @@ export interface DashboardMetrics {
     filename: string;
     status: string;
     updated_at: string | null;
+    reviewer?: string | null;
+    ai_status?: string | null;
+    human_status?: string | null;
+    document_type?: string | null;
   }[];
   reviewer_stats: {
     name: string;
     reviews: number;
+  }[];
+  timeline: {
+    date: string;
+    pendientes: number;
+    en_cola_ia: number;
+    revisados: number;
+  }[];
+  categories: {
+    name: string;
+    value: number;
+    color: string;
   }[];
 }
 

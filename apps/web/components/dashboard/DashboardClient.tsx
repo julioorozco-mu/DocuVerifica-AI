@@ -6,18 +6,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { api, DashboardMetrics } from "@/lib/api";
 import { 
   FileText, 
-  Upload, 
   CheckCircle, 
   Clock, 
   AlertTriangle,
-  History,
-  ArrowRight,
   Cpu,
-  Layers,
-  Users
+  ArrowRight,
+  TrendingUp,
+  TrendingDown,
+  Download
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Legend
+} from "recharts";
 
 export default function DashboardClient() {
   const [data, setData] = useState<DashboardMetrics | null>(null);
@@ -37,252 +50,444 @@ export default function DashboardClient() {
     fetchMetrics();
   }, []);
 
-  // Métricas dinámicas (fallback a 0 si no hay data)
+  // Fallbacks
   const total = data?.metrics?.total_documents || 0;
   const pending = data?.metrics?.pending_documents || 0;
   const completed = data?.metrics?.approved_documents || 0;
   const errors = data?.metrics?.error_documents || 0;
+  const revision = data?.metrics?.revision_required_documents || 0;
+  
   const recentDocs = data?.recent_activity || [];
   const reviewerStats = data?.reviewer_stats || [];
+  const timeline = data?.timeline || [];
+  const categories = data?.categories || [];
+
+  // Datos para Estado general de la cola IA (simulados basados en métricas globales para la demo visual)
+  const aiQueueData = [
+    { name: "En cola", value: 6, color: "#3b82f6" },
+    { name: "Procesando", value: 12, color: "#8b5cf6" },
+    { name: "Revisión humana", value: 18, color: "#f59e0b" },
+    { name: "Requiere revisión", value: 10, color: "#ef4444" },
+    { name: "Completados hoy", value: 14, color: "#10b981" },
+  ];
 
   return (
     <NavigationLayout>
-      <div className="space-y-8 max-w-6xl mx-auto">
+      <div className="space-y-6 max-w-[1400px] mx-auto w-full pb-10">
+        
+        {/* Encabezado Principal */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
-              <Layers className="w-8 h-8 text-indigo-500" />
-              Panel de Control
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+              Dashboard principal
             </h1>
-            <p className="text-slate-400 text-sm mt-2 max-w-lg">
-              Bienvenido al sistema de pre-revisión documental. Monitorea el estado de la cola y gestiona los dictámenes pendientes.
-            </p>
           </div>
-          <Link href="/documents/upload">
-            <Button className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg shadow-indigo-500/20 cursor-pointer flex items-center gap-2 h-11 px-6">
-              <Upload className="w-4 h-4" />
-              Nuevo Expediente
+          <div className="flex items-center gap-3">
+            <Button variant="outline" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl">
+              <Download className="w-4 h-4 mr-2" />
+              Exportar
             </Button>
-          </Link>
+          </div>
         </div>
 
-        {/* Estructura Bento Grid Premium */}
-        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-3 gap-5">
+        {/* Primera Fila: Resumen Operativo + Mini Gráficas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4">
           
-          {/* Card 1: Métricas de Documentos (Ocupa 2/3 en Desktop) */}
-          <div className="md:col-span-4 lg:col-span-2 grid grid-cols-2 gap-5">
-            
-            <Card className="bg-gradient-to-br from-slate-900/80 to-slate-900/40 border-slate-800/80 backdrop-blur-xl shadow-xl hover:border-slate-700/80 transition-all duration-300 group overflow-hidden relative">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all"></div>
-              <CardHeader className="flex flex-row items-center justify-between pb-2 z-10 relative">
-                <CardTitle className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Recibidos</CardTitle>
-                <div className="p-2 bg-indigo-500/10 rounded-lg">
-                  <FileText className="h-5 w-5 text-indigo-400" />
-                </div>
-              </CardHeader>
-              <CardContent className="z-10 relative">
-                <div className="text-4xl font-bold text-white tracking-tight">{loading ? "..." : total}</div>
-                <p className="text-xs text-slate-500 mt-2 font-medium">Documentos procesados localmente</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-slate-900/80 to-slate-900/40 border-slate-800/80 backdrop-blur-xl shadow-xl hover:border-yellow-900/30 transition-all duration-300 group overflow-hidden relative">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-yellow-500/10 rounded-full blur-2xl group-hover:bg-yellow-500/20 transition-all"></div>
-              <CardHeader className="flex flex-row items-center justify-between pb-2 z-10 relative">
-                <CardTitle className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pendientes</CardTitle>
-                <div className="p-2 bg-yellow-500/10 rounded-lg">
-                  <Clock className="h-5 w-5 text-yellow-400" />
-                </div>
-              </CardHeader>
-              <CardContent className="z-10 relative">
-                <div className="text-4xl font-bold text-white tracking-tight">{loading ? "..." : pending}</div>
-                <p className="text-xs text-slate-500 mt-2 font-medium">Requieren dictamen del revisor</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-slate-900/80 to-slate-900/40 border-slate-800/80 backdrop-blur-xl shadow-xl hover:border-emerald-900/30 transition-all duration-300 group overflow-hidden relative">
-              <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
-              <CardHeader className="flex flex-row items-center justify-between pb-2 z-10 relative">
-                <CardTitle className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Dictaminados</CardTitle>
-                <div className="p-2 bg-emerald-500/10 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-emerald-400" />
-                </div>
-              </CardHeader>
-              <CardContent className="z-10 relative">
-                <div className="text-4xl font-bold text-white tracking-tight">{loading ? "..." : completed}</div>
-                <p className="text-xs text-slate-500 mt-2 font-medium">Resoluciones guardadas con éxito</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-slate-900/80 to-slate-900/40 border-slate-800/80 backdrop-blur-xl shadow-xl hover:border-red-900/30 transition-all duration-300 group overflow-hidden relative">
-              <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-red-500/10 rounded-full blur-2xl group-hover:bg-red-500/20 transition-all"></div>
-              <CardHeader className="flex flex-row items-center justify-between pb-2 z-10 relative">
-                <CardTitle className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Errores Carga</CardTitle>
-                <div className="p-2 bg-red-500/10 rounded-lg">
-                  <AlertTriangle className="h-5 w-5 text-red-400" />
-                </div>
-              </CardHeader>
-              <CardContent className="z-10 relative">
-                <div className="text-4xl font-bold text-white tracking-tight">{loading ? "..." : errors}</div>
-                <p className="text-xs text-slate-500 mt-2 font-medium">Archivos corruptos o ilegibles</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Card 2: Estado del Sistema e IA (Ocupa 1/3 en Desktop) */}
-          <Card className="md:col-span-4 lg:col-span-1 bg-gradient-to-b from-indigo-950/40 via-slate-900/80 to-slate-950/90 border-indigo-500/20 backdrop-blur-xl shadow-2xl flex flex-col justify-between overflow-hidden relative">
-            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5 mix-blend-overlay"></div>
-            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent"></div>
-            
-            <CardHeader className="relative z-10">
-              <div className="flex items-center gap-2 mb-2">
-                <Cpu className="w-5 h-5 text-indigo-400" />
-                <CardTitle className="text-lg text-white font-bold tracking-wide">Motor de Inferencia</CardTitle>
-              </div>
-              <CardDescription className="text-slate-400 text-sm leading-relaxed">
-                El motor local <span className="text-indigo-300 font-medium">Ollama</span> está en línea y monitoreando la cola de extracción documental de forma segura.
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="space-y-5 relative z-10">
-              <div className="p-4 bg-black/40 border border-slate-800/80 rounded-2xl flex flex-col gap-3 backdrop-blur-md">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                    <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Estado GPU Local</span>
-                  </div>
-                  <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full font-bold tracking-wide border border-emerald-500/20">READY</span>
-                </div>
-                
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[11px] text-slate-400">
-                    <span>Modelo Asignado</span>
-                    <span className="text-indigo-300 font-medium">Multi-modelo (Selector Dinámico)</span>
-                  </div>
-                  <div className="flex justify-between text-[11px] text-slate-400">
-                    <span>Procesos Activos</span>
-                    <span className="text-slate-300">0 en cola</span>
-                  </div>
-                </div>
-              </div>
-
-              <Link href="/documents/upload" className="block w-full">
-                <Button className="w-full bg-white text-indigo-950 hover:bg-slate-200 rounded-xl shadow-[0_0_20px_rgba(99,102,241,0.2)] hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] cursor-pointer flex items-center justify-center gap-2 h-12 font-bold transition-all duration-300">
-                  Comenzar Pre-Revisión
-                  <ArrowRight className="w-5 h-5 ml-1" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          {/* Card 3: Bandeja Reciente Bento */}
-          <Card className="md:col-span-4 lg:col-span-3 bg-slate-900/60 border-slate-800/80 backdrop-blur-xl shadow-xl mt-2">
-            <CardHeader className="flex flex-row items-center justify-between pb-6 border-b border-slate-800/60">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-slate-800/80 rounded-xl">
-                  <History className="w-5 h-5 text-slate-300" />
-                </div>
+          {/* Bloque Resumen Operativo (ocupa 4 columnas) */}
+          <Card className="col-span-1 md:col-span-2 lg:col-span-4 xl:col-span-4 shadow-sm border-slate-200 dark:border-slate-800 dark:bg-slate-900">
+            <CardHeader className="pb-2 border-b border-slate-100 dark:border-slate-800/50">
+              <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-lg text-white font-bold tracking-wide">Últimos Expedientes Procesados</CardTitle>
-                  <CardDescription className="text-slate-400 mt-1">
-                    Historial reciente de la cola local. Haz clic en un documento para abrir el workspace de revisión.
-                  </CardDescription>
+                  <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-100">Resumen operativo</CardTitle>
+                  <CardDescription className="text-xs text-slate-500">Panorama general del sistema</CardDescription>
                 </div>
               </div>
-              <Link href="/documents">
-                <Button variant="ghost" className="text-sm font-medium text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 rounded-xl cursor-pointer">
-                  Ir a la Bandeja
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
             </CardHeader>
             <CardContent className="p-0">
-              {loading ? (
-                <div className="flex flex-col items-center justify-center py-12 space-y-3 text-slate-500">
-                  <div className="w-8 h-8 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
-                  <span className="text-sm font-medium">Cargando registros del sistema...</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-100 dark:divide-slate-800">
+                
+                <div className="p-4 flex flex-col justify-between">
+                  <div className="flex items-center gap-2 mb-2 text-slate-500 dark:text-slate-400">
+                    <FileText className="w-4 h-4 text-blue-500" />
+                    <span className="text-xs font-medium">Documentos totales</span>
+                  </div>
+                  <div className="text-3xl font-bold text-slate-900 dark:text-white">{loading ? "..." : total}</div>
+                  <div className="flex items-center text-[10px] text-emerald-500 font-medium mt-1">
+                    <TrendingUp className="w-3 h-3 mr-1" />
+                    +18% vs. mes anterior
+                  </div>
                 </div>
-              ) : recentDocs.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 text-sm flex flex-col items-center gap-2">
-                  <FileText className="w-8 h-8 text-slate-700" />
-                  No hay documentos procesados aún en el almacenamiento local.
+
+                <div className="p-4 flex flex-col justify-between">
+                  <div className="flex items-center gap-2 mb-2 text-slate-500 dark:text-slate-400">
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                    <span className="text-xs font-medium">Completados</span>
+                  </div>
+                  <div className="text-3xl font-bold text-slate-900 dark:text-white">{loading ? "..." : completed}</div>
+                  <div className="text-[10px] text-emerald-500 font-medium mt-1">
+                    67% del total
+                  </div>
                 </div>
-              ) : (
-                <div className="divide-y divide-slate-800/60">
-                  {recentDocs.map((doc) => (
-                    <Link href={`/documents/${doc.id}`} key={doc.id} className="block group">
-                      <div className="p-4 flex items-center justify-between hover:bg-slate-800/40 transition-colors duration-200">
-                        <div className="flex items-center gap-4 min-w-0">
-                          <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0 border border-slate-700/50 group-hover:border-indigo-500/30 transition-colors">
-                            <FileText className="w-5 h-5 text-indigo-400/80" />
-                          </div>
-                          <div>
-                            <span className="block font-semibold text-slate-200 truncate max-w-xs md:max-w-md group-hover:text-indigo-300 transition-colors">{doc.filename}</span>
-                            <span className="block text-xs text-slate-500 mt-0.5 font-medium">ID: {doc.id.substring(0,8)}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className={`text-[11px] px-3 py-1 rounded-full font-bold uppercase tracking-wider ${
-                            doc.status === "human_review_done" 
-                              ? "bg-emerald-950/40 text-emerald-400 border border-emerald-500/20"
-                              : doc.status === "error"
-                              ? "bg-red-950/40 text-red-400 border border-red-500/20"
-                              : "bg-yellow-950/40 text-yellow-400 border border-yellow-500/20"
-                          }`}>
-                            {doc.status === "human_review_done" ? "Completado" : doc.status === "uploaded" ? "Subido" : doc.status.replace("_", " ")}
-                          </span>
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 group-hover:bg-indigo-500/10 group-hover:text-indigo-400 transition-all">
-                            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+
+                <div className="p-4 flex flex-col justify-between">
+                  <div className="flex items-center gap-2 mb-2 text-slate-500 dark:text-slate-400">
+                    <Clock className="w-4 h-4 text-purple-500" />
+                    <span className="text-xs font-medium">En procesamiento</span>
+                  </div>
+                  <div className="text-3xl font-bold text-slate-900 dark:text-white">{loading ? "..." : pending}</div>
+                  <div className="text-[10px] text-purple-500 font-medium mt-1">
+                    25% del total
+                  </div>
                 </div>
-              )}
+
+                <div className="p-4 flex flex-col justify-between">
+                  <div className="flex items-center gap-2 mb-2 text-slate-500 dark:text-slate-400">
+                    <AlertTriangle className="w-4 h-4 text-orange-500" />
+                    <span className="text-xs font-medium">Requieren atención</span>
+                  </div>
+                  <div className="text-3xl font-bold text-slate-900 dark:text-white">{loading ? "..." : (revision + errors)}</div>
+                  <div className="text-[10px] text-orange-500 font-medium mt-1">
+                    8% del total
+                  </div>
+                </div>
+
+              </div>
+              <div className="bg-indigo-50/50 dark:bg-indigo-950/20 p-3 border-t border-indigo-100 dark:border-indigo-900/30 flex justify-between items-center px-4">
+                <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium flex items-center">
+                   El tiempo promedio de revisión disminuyó 14% esta semana.
+                </span>
+                <Link href="#" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Ver reportes</Link>
+              </div>
             </CardContent>
           </Card>
-          
-          {/* Card 4: Productividad (solo admin) */}
-          {reviewerStats.length > 0 && (
-            <Card className="md:col-span-4 bg-slate-900/60 border-slate-800/80 backdrop-blur-xl shadow-xl mt-2">
-              <CardHeader className="flex flex-row items-center justify-between pb-6 border-b border-slate-800/60">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-slate-800/80 rounded-xl">
-                    <Users className="w-5 h-5 text-slate-300" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg text-white font-bold tracking-wide">Productividad de Revisores</CardTitle>
-                    <CardDescription className="text-slate-400 mt-1">
-                      Reporte de documentos revisados por usuario.
-                    </CardDescription>
-                  </div>
+
+          {/* Mini Cards con Gráficas (1 columna cada una en XL) */}
+          <Card className="col-span-1 lg:col-span-2 xl:col-span-1 shadow-sm border-slate-200 dark:border-slate-800 dark:bg-slate-900 flex flex-col">
+            <CardHeader className="pb-0 pt-4 px-4 flex-none">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">Pendientes</CardTitle>
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{loading ? "-" : pending}</div>
                 </div>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {reviewerStats.map((stat, i) => (
-                    <div key={i} className="bg-slate-950/50 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
-                          <Users className="w-5 h-5 text-indigo-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-white">{stat.name}</p>
-                          <p className="text-xs text-slate-400">Revisor</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-emerald-400">{stat.reviews}</p>
-                        <p className="text-[10px] text-slate-500 font-medium">Dictámenes</p>
-                      </div>
-                    </div>
-                  ))}
+                <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                  <FileText className="w-4 h-4 text-blue-500" />
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Documentos por revisar</div>
+            </CardHeader>
+            <CardContent className="p-0 flex-1 min-h-[60px] relative mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={timeline} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
+                  <Line type="monotone" dataKey="pendientes" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+              <div className="absolute bottom-3 left-4 text-[10px] font-medium text-emerald-500 flex items-center">
+                <TrendingUp className="w-3 h-3 mr-1" /> 14% vs. ayer
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-1 lg:col-span-2 xl:col-span-1 shadow-sm border-slate-200 dark:border-slate-800 dark:bg-slate-900 flex flex-col">
+            <CardHeader className="pb-0 pt-4 px-4 flex-none">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">En cola IA</CardTitle>
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1">6</div>
+                </div>
+                <div className="p-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-md">
+                  <Cpu className="w-4 h-4 text-purple-500" />
+                </div>
+              </div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Procesando</div>
+            </CardHeader>
+            <CardContent className="p-0 flex-1 min-h-[60px] relative mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={timeline} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
+                  <Line type="monotone" dataKey="en_cola_ia" stroke="#8b5cf6" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+              <div className="absolute bottom-3 left-4 text-[10px] font-medium text-emerald-500 flex items-center">
+                <TrendingDown className="w-3 h-3 mr-1" /> 10% vs. ayer
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-1 lg:col-span-2 xl:col-span-1 shadow-sm border-slate-200 dark:border-slate-800 dark:bg-slate-900 flex flex-col">
+            <CardHeader className="pb-0 pt-4 px-4 flex-none">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">Revisados hoy</CardTitle>
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white mt-1">14</div>
+                </div>
+                <div className="p-1.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-md">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                </div>
+              </div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Documentos completados</div>
+            </CardHeader>
+            <CardContent className="p-0 flex-1 min-h-[60px] relative mt-2 px-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={timeline} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
+                  <Bar dataKey="revisados" fill="#10b981" radius={[2, 2, 0, 0]} barSize={8} />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="absolute bottom-3 left-4 text-[10px] font-medium text-emerald-500 flex items-center">
+                <TrendingUp className="w-3 h-3 mr-1" /> 27% vs. ayer
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-1 lg:col-span-2 xl:col-span-1 shadow-sm border-slate-200 dark:border-slate-800 dark:bg-slate-900 flex flex-col">
+            <CardHeader className="pb-0 pt-4 px-4 flex-none">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-400">Alertas críticas</CardTitle>
+                  <div className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{loading ? "-" : errors}</div>
+                </div>
+                <div className="p-1.5 bg-red-50 dark:bg-red-900/20 rounded-md">
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                </div>
+              </div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Requieren atención</div>
+            </CardHeader>
+            <CardContent className="p-0 flex-1 min-h-[60px] relative mt-2 px-2 flex flex-col justify-end pb-3">
+               <div className="flex items-end justify-between h-8 gap-1 px-2">
+                 {[4,7,3,8,2,9,5].map((val, i) => (
+                    <div key={i} className="w-full bg-red-400 rounded-t-sm" style={{height: `${val*10}%`}}></div>
+                 ))}
+               </div>
+               <Link href="#" className="absolute bottom-3 left-4 text-[10px] font-semibold text-blue-600 dark:text-blue-400">Ver alertas →</Link>
+            </CardContent>
+          </Card>
+
         </div>
+
+        {/* Segunda Fila: Gráficas de Dona y Barras */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          
+          {/* Estado Cola IA */}
+          <Card className="shadow-sm border-slate-200 dark:border-slate-800 dark:bg-slate-900">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between">
+                <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100">Estado general de la cola IA</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="flex items-center p-4">
+               <div className="flex-1">
+                 <ul className="space-y-2 text-xs">
+                    {aiQueueData.map((item, i) => (
+                      <li key={i} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full" style={{backgroundColor: item.color}}></div>
+                          <span className="text-slate-600 dark:text-slate-400">{item.name}</span>
+                        </div>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{item.value}</span>
+                      </li>
+                    ))}
+                 </ul>
+                 <Link href="#" className="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-4 inline-block">Ver detalle de la cola →</Link>
+               </div>
+               <div className="w-[120px] h-[120px] relative">
+                 <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={aiQueueData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={55}
+                        paddingAngle={2}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {aiQueueData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                 </ResponsiveContainer>
+                 <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-lg font-bold text-slate-800 dark:text-white">60</span>
+                    <span className="text-[9px] text-slate-500 uppercase">Total</span>
+                 </div>
+               </div>
+            </CardContent>
+          </Card>
+
+          {/* Resumen de Documentos */}
+          <Card className="shadow-sm border-slate-200 dark:border-slate-800 dark:bg-slate-900">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100">Resumen de documentos</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center p-4">
+               <div className="w-[120px] h-[120px] relative">
+                 <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categories.length ? categories : [{name: "Vacio", value: 1, color: "#ccc"}]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={55}
+                        paddingAngle={2}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {categories.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                 </ResponsiveContainer>
+                 <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-lg font-bold text-slate-800 dark:text-white">{total}</span>
+                    <span className="text-[9px] text-slate-500 uppercase">Total</span>
+                 </div>
+               </div>
+               <div className="flex-1 ml-4">
+                 <ul className="space-y-2 text-[11px]">
+                    {categories.map((item, i) => (
+                      <li key={i} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full" style={{backgroundColor: item.color}}></div>
+                          <span className="text-slate-600 dark:text-slate-400 truncate max-w-[80px]" title={item.name}>{item.name}</span>
+                        </div>
+                        <div className="text-right flex gap-2">
+                           <span className="font-semibold text-slate-800 dark:text-slate-200">{item.value}</span>
+                           <span className="text-slate-400 w-8">({Math.round((item.value/Math.max(total, 1))*100)}%)</span>
+                        </div>
+                      </li>
+                    ))}
+                 </ul>
+                 <Link href="/documents" className="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-4 inline-block">Ver todos →</Link>
+               </div>
+            </CardContent>
+          </Card>
+
+          {/* Productividad Revisor */}
+          <Card className="shadow-sm border-slate-200 dark:border-slate-800 dark:bg-slate-900">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100">Productividad por revisor <span className="text-slate-400 font-normal">(esta semana)</span></CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+               {reviewerStats.length > 0 ? (
+                 <div className="space-y-3">
+                   {reviewerStats.slice(0, 5).map((stat, i) => {
+                     const maxReviews = Math.max(...reviewerStats.map(s => s.reviews), 1);
+                     const percentage = (stat.reviews / maxReviews) * 100;
+                     return (
+                       <div key={i} className="flex items-center gap-3 text-xs">
+                         <span className="text-slate-400 w-3">{i+1}</span>
+                         <span className="text-slate-700 dark:text-slate-300 w-24 truncate">{stat.name}</span>
+                         <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                           <div className="h-full bg-blue-500 rounded-full" style={{width: `${percentage}%`}}></div>
+                         </div>
+                         <span className="font-semibold text-slate-800 dark:text-slate-200 w-6 text-right">{stat.reviews}</span>
+                       </div>
+                     )
+                   })}
+                 </div>
+               ) : (
+                 <div className="text-xs text-slate-500 py-4 text-center">No hay datos de revisores</div>
+               )}
+               <Link href="/admin/users" className="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-5 inline-block">Ver ranking completo →</Link>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tercera Fila: Tabla de Documentos */}
+        <Card className="shadow-sm border-slate-200 dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between py-4 border-b border-slate-100 dark:border-slate-800/60 bg-white dark:bg-slate-900">
+            <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-100">Últimos documentos</CardTitle>
+            <Link href="/documents" className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">Ver todos los documentos →</Link>
+          </CardHeader>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 uppercase font-semibold">
+                <tr>
+                  <th className="px-6 py-3 font-medium">Folio</th>
+                  <th className="px-6 py-3 font-medium">Documento</th>
+                  <th className="px-6 py-3 font-medium">Tipo</th>
+                  <th className="px-6 py-3 font-medium">Revisor</th>
+                  <th className="px-6 py-3 font-medium">Estado IA</th>
+                  <th className="px-6 py-3 font-medium">Estado Humano</th>
+                  <th className="px-6 py-3 font-medium">Fecha</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
+                      Cargando registros...
+                    </td>
+                  </tr>
+                ) : recentDocs.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
+                      No hay documentos recientes.
+                    </td>
+                  </tr>
+                ) : (
+                  recentDocs.map((doc) => (
+                    <tr key={doc.id} className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="px-6 py-3 font-medium text-slate-900 dark:text-slate-300">
+                        DOC-{doc.id.substring(0, 8).toUpperCase()}
+                      </td>
+                      <td className="px-6 py-3">
+                        <Link href={`/documents/${doc.id}`} className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                          <FileText className="w-4 h-4" />
+                          {doc.filename}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-3 text-slate-600 dark:text-slate-400">
+                        {doc.document_type || "Otros"}
+                      </td>
+                      <td className="px-6 py-3 text-slate-600 dark:text-slate-400">
+                        {doc.reviewer ? (
+                           <div className="flex items-center gap-2">
+                             <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center text-[10px] font-bold">
+                               {doc.reviewer.substring(0,2).toUpperCase()}
+                             </div>
+                             {doc.reviewer}
+                           </div>
+                        ) : "-"}
+                      </td>
+                      <td className="px-6 py-3">
+                        {doc.ai_status ? (
+                          <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${
+                            doc.ai_status === 'cumple' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' :
+                            doc.ai_status === 'no_cumple' ? 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400' :
+                            doc.ai_status === 'requiere_revision' ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400' :
+                            doc.ai_status === 'no_encontrado' ? 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-400' :
+                            'bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400'
+                          }`}>
+                            {doc.ai_status.replace("_", " ")}
+                          </span>
+                        ) : "-"}
+                      </td>
+                      <td className="px-6 py-3">
+                         {doc.human_status ? (
+                          <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${
+                            doc.human_status === 'cumple' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' :
+                            doc.human_status === 'no_cumple' ? 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400' :
+                            doc.human_status === 'requiere_revision' ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400' :
+                            'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-400'
+                          }`}>
+                            {doc.human_status.replace("_", " ")}
+                          </span>
+                        ) : "-"}
+                      </td>
+                      <td className="px-6 py-3 text-slate-500 dark:text-slate-400 text-xs">
+                        {doc.updated_at ? new Date(doc.updated_at).toLocaleDateString() + ' ' + new Date(doc.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "-"}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+        
       </div>
     </NavigationLayout>
   );

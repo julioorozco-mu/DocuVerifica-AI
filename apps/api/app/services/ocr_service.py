@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models import Document
-from app.services.text_extractor import extract_text_and_chunks, save_chunks_to_db
+from app.services.extraction import extract_text_from_document
 
 logger = logging.getLogger(__name__)
 
@@ -74,9 +74,9 @@ def process_document_ocr(document_id: UUID):
             input_pdf = output_pdf
 
         # Volver a extraer el texto ahora que tiene OCR
-        chunks = extract_text_and_chunks(input_pdf)
+        extraction_result = extract_text_from_document(input_pdf)
         
-        if not chunks:
+        if not extraction_result.chunks:
             # Si a pesar del OCR no hay texto, lo marcamos como listo pero con error advertencia?
             logger.warning(f"No text extracted from document {document_id} even after OCR.")
             document.status = "ready_for_review"
@@ -84,9 +84,23 @@ def process_document_ocr(document_id: UUID):
             return
             
         # Guardar chunks en BD
-        save_chunks_to_db(db, document_id, chunks)
+        from app.models import DocumentChunk
+        db.query(DocumentChunk).filter(DocumentChunk.document_id == document_id).delete()
+        for chunk_data in extraction_result.chunks:
+            db_chunk = DocumentChunk(
+                document_id=document_id,
+                chunk_index=chunk_data.chunk_index,
+                text=chunk_data.text,
+                section_heading=chunk_data.section_heading,
+                headings=chunk_data.headings,
+                page_start=chunk_data.page_start,
+                page_end=chunk_data.page_end,
+                word_count=chunk_data.word_count,
+                chunk_metadata=chunk_data.metadata
+            )
+            db.add(db_chunk)
         
-        # Marcar como listo para revisión (o encolar a IA directamente si ese es el flujo)
+        # Marcar como listo para revisión
         document.status = "ready_for_review"
         
         from app.models import AuditLog
