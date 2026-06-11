@@ -17,18 +17,23 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 // TODO: Reemplazar queueStatus por prop recibida desde DashboardClient al conectar con API.
 
-export default function AiQueueStatusCard() {
-  const q = queueStatus;
+interface AiQueueStatusCardProps {
+  data?: typeof queueStatus;
+}
+
+export default function AiQueueStatusCard({ data = queueStatus }: AiQueueStatusCardProps) {
+  const q = data;
+  const totalForChart = Math.max(q.total, 1);
   const gradient = q.items.reduce(
     (acc, item) => {
-      const end = acc.current + (item.value / q.total) * 100;
+      const end = acc.current + (item.value / totalForChart) * 100;
       return {
         current: end,
         segments: [...acc.segments, `${item.color} ${acc.current}% ${end}%`],
       };
     },
     { current: 0, segments: [] as string[] }
-  ).segments.join(", ");
+  ).segments.join(", ") || "#E5EAF2 0% 100%";
 
   return (
     <div className="h-[216px] overflow-hidden rounded-[14px] border border-[#E5EAF2] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]">

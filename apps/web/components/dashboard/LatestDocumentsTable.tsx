@@ -6,13 +6,23 @@
 import React from "react";
 import Link from "next/link";
 import { FileText, MoreVertical, ArrowRight } from "lucide-react";
-import { latestDocuments } from "@/lib/mock-dashboard-data";
+import { latestDocuments, type LatestDocument } from "@/lib/mock-dashboard-data";
 import StatusPill from "@/components/ui/StatusPill";
 
 // TODO: Reemplazar latestDocuments por prop al conectar con API real.
 
-export default function LatestDocumentsTable() {
-  const docs = latestDocuments;
+interface LatestDocumentsTableProps {
+  documents?: LatestDocument[];
+  showReviewer?: boolean;
+}
+
+export default function LatestDocumentsTable({
+  documents = latestDocuments,
+  showReviewer = true,
+}: LatestDocumentsTableProps) {
+  const headers = showReviewer
+    ? ["Folio", "Documento", "Tipo", "Revisor", "Estado IA", "Estado humano", "Fecha", "Acción"]
+    : ["Folio", "Documento", "Tipo", "Estado IA", "Estado humano", "Fecha", "Acción"];
 
   return (
     <div className="overflow-hidden rounded-[18px] border border-[#E5EAF2] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
@@ -33,7 +43,7 @@ export default function LatestDocumentsTable() {
           {/* Head */}
           <thead>
             <tr className="border-y border-[#E5EAF2] bg-[#F8FAFC]">
-              {["Folio", "Documento", "Tipo", "Revisor", "Estado IA", "Estado humano", "Fecha", "Acción"].map((h) => (
+              {headers.map((h) => (
                 <th
                   key={h}
                   className="whitespace-nowrap px-5 py-2 text-[10px] font-semibold text-[#334155]"
@@ -46,7 +56,7 @@ export default function LatestDocumentsTable() {
 
           {/* Body */}
           <tbody className="divide-y divide-[#EEF2F7]">
-            {docs.map((doc) => (
+            {documents.map((doc) => (
               <tr
                 key={doc.id}
                 className="group transition-colors hover:bg-[#F8FAFC]"
@@ -73,20 +83,22 @@ export default function LatestDocumentsTable() {
                 </td>
 
                 {/* Revisor */}
-                <td className="px-5 py-2">
-                  {doc.revisor ? (
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full ${doc.revisor.color}`}
-                      >
-                        <span className="text-[8px] font-bold text-white">{doc.revisor.initials}</span>
+                {showReviewer && (
+                  <td className="px-5 py-2">
+                    {doc.revisor ? (
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full ${doc.revisor.color}`}
+                        >
+                          <span className="text-[8px] font-bold text-white">{doc.revisor.initials}</span>
+                        </div>
+                        <span className="whitespace-nowrap text-[11px] text-[#334155]">{doc.revisor.name}</span>
                       </div>
-                      <span className="whitespace-nowrap text-[11px] text-[#334155]">{doc.revisor.name}</span>
-                    </div>
-                  ) : (
-                    <span className="text-[11px] text-[#64748B]">—</span>
-                  )}
-                </td>
+                    ) : (
+                      <span className="text-[11px] text-[#64748B]">—</span>
+                    )}
+                  </td>
+                )}
 
                 {/* Estado IA */}
                 <td className="px-5 py-2">
@@ -114,6 +126,13 @@ export default function LatestDocumentsTable() {
                 </td>
               </tr>
             ))}
+            {documents.length === 0 && (
+              <tr>
+                <td colSpan={headers.length} className="px-5 py-8 text-center text-[12px] text-[#64748B]">
+                  No hay documentos recientes para mostrar.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

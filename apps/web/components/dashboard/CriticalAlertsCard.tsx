@@ -15,8 +15,11 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 // TODO: Reemplazar criticalAlerts por prop al conectar con API real.
 
-export default function CriticalAlertsCard() {
-  const alerts = criticalAlerts;
+interface CriticalAlertsCardProps {
+  alerts?: typeof criticalAlerts;
+}
+
+export default function CriticalAlertsCard({ alerts = criticalAlerts }: CriticalAlertsCardProps) {
 
   return (
     <div className="h-[216px] overflow-hidden rounded-[14px] border border-[#E5EAF2] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]">

@@ -8,18 +8,23 @@ import { documentSummary } from "@/lib/mock-dashboard-data";
 
 // TODO: Reemplazar documentSummary por prop al conectar con API real.
 
-export default function DocumentSummaryCard() {
-  const d = documentSummary;
+interface DocumentSummaryCardProps {
+  data?: typeof documentSummary;
+}
+
+export default function DocumentSummaryCard({ data = documentSummary }: DocumentSummaryCardProps) {
+  const d = data;
+  const totalForChart = Math.max(d.total, 1);
   const gradient = d.categories.reduce(
     (acc, cat) => {
-      const end = acc.current + (cat.value / d.total) * 100;
+      const end = acc.current + (cat.value / totalForChart) * 100;
       return {
         current: end,
         segments: [...acc.segments, `${cat.color} ${acc.current}% ${end}%`],
       };
     },
     { current: 0, segments: [] as string[] }
-  ).segments.join(", ");
+  ).segments.join(", ") || "#E5EAF2 0% 100%";
 
   return (
     <div className="h-[216px] overflow-hidden rounded-[14px] border border-[#E5EAF2] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]">

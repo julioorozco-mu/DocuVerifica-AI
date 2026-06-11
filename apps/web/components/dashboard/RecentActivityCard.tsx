@@ -21,8 +21,11 @@ const TYPE_STYLE: Record<string, { icon: string; bg: string }> = {
 
 // TODO: Reemplazar recentActivity por prop al conectar con API real.
 
-export default function RecentActivityCard() {
-  const activities = recentActivity;
+interface RecentActivityCardProps {
+  activities?: typeof recentActivity;
+}
+
+export default function RecentActivityCard({ activities = recentActivity }: RecentActivityCardProps) {
 
   return (
     <div className="h-[150px] overflow-hidden rounded-[14px] border border-[#E5EAF2] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]">

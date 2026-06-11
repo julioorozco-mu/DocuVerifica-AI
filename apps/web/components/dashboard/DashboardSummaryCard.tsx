@@ -9,8 +9,12 @@ import { dashboardSummary } from "@/lib/mock-dashboard-data";
 
 // TODO: Para conectar con backend real, recibir `data` como prop o hacer fetch desde DashboardClient.
 
-export default function DashboardSummaryCard() {
-  const d = dashboardSummary;
+interface DashboardSummaryCardProps {
+  data?: typeof dashboardSummary;
+}
+
+export default function DashboardSummaryCard({ data = dashboardSummary }: DashboardSummaryCardProps) {
+  const d = data;
 
   return (
     <div className="min-h-[128px] overflow-hidden rounded-[14px] border border-[#E5EAF2] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
