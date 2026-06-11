@@ -4,7 +4,7 @@
  * Lista de alertas con nivel de prioridad Alta/Media.
  */
 import React from "react";
-import { AlertCircle, FileCheck, Cpu, ArrowRight } from "lucide-react";
+import { AlertCircle, FileCheck, Cpu } from "lucide-react";
 import { criticalAlerts } from "@/lib/mock-dashboard-data";
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -19,37 +19,37 @@ export default function CriticalAlertsCard() {
   const alerts = criticalAlerts;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden h-full">
+    <div className="h-[216px] overflow-hidden rounded-[14px] border border-[#E5EAF2] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-3">
-        <p className="text-[13px] font-semibold text-slate-800">Alertas críticas</p>
-        <button className="text-[12px] font-semibold text-blue-600 hover:text-blue-700">
+      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+        <p className="text-[13px] font-semibold text-[#0F172A]">Alertas críticas</p>
+        <button className="text-[11px] font-semibold text-[#2563EB] hover:text-[#1D4ED8]">
           Ver todas →
         </button>
       </div>
 
       {/* Lista */}
-      <div className="px-5 pb-5 space-y-3">
+      <div className="space-y-1.5 px-5 pb-3">
         {alerts.map((alert) => {
           const Icon = ICON_MAP[alert.icon] ?? AlertCircle;
           return (
             <div
               key={alert.id}
-              className="flex items-start gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="flex min-h-[45px] cursor-pointer items-center gap-2.5 rounded-[9px] border border-transparent bg-red-50/70 px-2.5 py-1.5 transition-colors hover:bg-red-50"
             >
               {/* Icono */}
-              <div className={`w-8 h-8 rounded-lg ${alert.iconBg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                <Icon className={`w-4 h-4 ${alert.iconColor}`} />
+              <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[8px] ${alert.iconBg}`}>
+                <Icon className={`h-3.5 w-3.5 ${alert.iconColor}`} />
               </div>
 
               {/* Contenido */}
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-medium text-slate-800 leading-snug">{alert.title}</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">{alert.meta}</p>
+                <p className="line-clamp-2 text-[11px] font-semibold leading-[1.15] text-[#0F172A]">{alert.title}</p>
+                <p className="mt-0.5 text-[10px] leading-none text-[#64748B]">{alert.meta}</p>
               </div>
 
               {/* Badge prioridad */}
-              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border whitespace-nowrap ${alert.priorityColor} border-transparent`}>
+              <span className={`whitespace-nowrap rounded-[7px] border border-transparent px-2.5 py-1 text-[10px] font-semibold ${alert.priorityColor}`}>
                 {alert.priority}
               </span>
             </div>

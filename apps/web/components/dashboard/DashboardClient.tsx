@@ -77,7 +77,7 @@ export default function DashboardClient() {
     : null;
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans">
+    <div className="flex h-screen overflow-hidden bg-[#F8FAFC] font-sans text-[#0F172A]">
       {/* ── Sidebar ──────────────────────────────────────────────────────── */}
       <AppSidebar userRole={profile?.role} />
 
@@ -90,17 +90,18 @@ export default function DashboardClient() {
         />
 
         {/* Bento Grid */}
-        <main className="flex-1 p-5 space-y-4 overflow-auto">
+        <main className="flex-1 overflow-auto px-5 py-1 lg:px-6">
+          <div className="space-y-3">
 
           {/* ── FILA 1: Resumen operativo + 4 KPI cards ─────────────────── */}
-          <div className="grid grid-cols-1 xl:grid-cols-9 gap-4">
+          <div className="grid grid-cols-1 gap-3 2xl:grid-cols-12">
             {/* Resumen operativo — ocupa 5/9 columnas en XL */}
-            <div className="xl:col-span-5">
+            <div className="2xl:col-span-5">
               <DashboardSummaryCard />
             </div>
 
             {/* 4 mini KPI cards — 1/9 cada una en XL, 2 cols en MD */}
-            <div className="xl:col-span-4 grid grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-3 2xl:col-span-7 2xl:grid-cols-4">
               {kpiCards.map((kpi) => (
                 <DashboardKpiCard key={kpi.id} data={kpi} />
               ))}
@@ -108,7 +109,7 @@ export default function DashboardClient() {
           </div>
 
           {/* ── FILA 2: Cola IA + Resumen docs + Productividad + Alertas ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-4">
             <AiQueueStatusCard />
             <DocumentSummaryCard />
             <ReviewerProductivityCard />
@@ -116,13 +117,13 @@ export default function DashboardClient() {
           </div>
 
           {/* ── FILA 3: Reportes ejecutivos + Actividad reciente ─────────── */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-            {/* Reportes ocupa 2/3 columnas */}
-            <div className="xl:col-span-2">
+          <div className="grid grid-cols-1 gap-3 2xl:grid-cols-2">
+            {/* Reportes ocupa 50% de la fila */}
+            <div>
               <ExecutiveReportsCard />
             </div>
-            {/* Actividad reciente ocupa 1/3 */}
-            <div className="xl:col-span-1">
+            {/* Actividad reciente ocupa el 50% restante */}
+            <div>
               <RecentActivityCard />
             </div>
           </div>
@@ -130,6 +131,7 @@ export default function DashboardClient() {
           {/* ── FILA 4: Tabla de últimos documentos ──────────────────────── */}
           <LatestDocumentsTable />
 
+          </div>
         </main>
       </div>
     </div>

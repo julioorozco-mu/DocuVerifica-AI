@@ -15,15 +15,15 @@ export default function LatestDocumentsTable() {
   const docs = latestDocuments;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="overflow-hidden rounded-[18px] border border-[#E5EAF2] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-        <p className="text-[14px] font-semibold text-slate-800">Últimos documentos</p>
+      <div className="flex items-center justify-between px-6 py-2.5">
+        <p className="text-[14px] font-semibold text-[#0F172A]">Últimos documentos</p>
         <Link
           href="/documents"
-          className="text-[12px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+          className="flex items-center gap-1 text-[12px] font-semibold text-[#2563EB] hover:text-[#1D4ED8]"
         >
-          Ver todos los documentos <ArrowRight className="w-3.5 h-3.5" />
+          Ver todos los documentos <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
 
@@ -32,11 +32,11 @@ export default function LatestDocumentsTable() {
         <table className="w-full text-left">
           {/* Head */}
           <thead>
-            <tr className="border-b border-slate-100 bg-slate-50">
+            <tr className="border-y border-[#E5EAF2] bg-[#F8FAFC]">
               {["Folio", "Documento", "Tipo", "Revisor", "Estado IA", "Estado humano", "Fecha", "Acción"].map((h) => (
                 <th
                   key={h}
-                  className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap"
+                  className="whitespace-nowrap px-5 py-2 text-[10px] font-semibold text-[#334155]"
                 >
                   {h}
                 </th>
@@ -45,71 +45,71 @@ export default function LatestDocumentsTable() {
           </thead>
 
           {/* Body */}
-          <tbody className="divide-y divide-slate-50">
+          <tbody className="divide-y divide-[#EEF2F7]">
             {docs.map((doc) => (
               <tr
                 key={doc.id}
-                className="hover:bg-slate-50 transition-colors group"
+                className="group transition-colors hover:bg-[#F8FAFC]"
               >
                 {/* Folio */}
-                <td className="px-4 py-3">
-                  <span className="text-[12px] font-mono font-medium text-slate-500">{doc.folio}</span>
+                <td className="px-5 py-2">
+                  <span className="font-mono text-[11px] font-medium text-[#334155]">{doc.folio}</span>
                 </td>
 
                 {/* Documento */}
-                <td className="px-4 py-3">
+                <td className="px-5 py-2">
                   <Link
                     href={`/documents/${doc.id}`}
-                    className="flex items-center gap-2 text-[12px] font-medium text-blue-600 hover:text-blue-700 hover:underline max-w-[200px] truncate"
+                    className="flex max-w-[230px] items-center gap-2 truncate text-[11px] font-medium text-[#334155] hover:text-[#2563EB] hover:underline"
                   >
-                    <FileText className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                    <FileText className="h-4 w-4 flex-shrink-0 text-[#2563EB]" />
                     <span className="truncate">{doc.filename}</span>
                   </Link>
                 </td>
 
                 {/* Tipo */}
-                <td className="px-4 py-3">
-                  <span className="text-[12px] text-slate-600">{doc.tipo}</span>
+                <td className="px-5 py-2">
+                  <span className="text-[11px] text-[#334155]">{doc.tipo}</span>
                 </td>
 
                 {/* Revisor */}
-                <td className="px-4 py-3">
+                <td className="px-5 py-2">
                   {doc.revisor ? (
                     <div className="flex items-center gap-2">
                       <div
-                        className={`w-6 h-6 rounded-full ${doc.revisor.color} flex items-center justify-center flex-shrink-0`}
+                        className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full ${doc.revisor.color}`}
                       >
-                        <span className="text-[9px] font-bold text-white">{doc.revisor.initials}</span>
+                        <span className="text-[8px] font-bold text-white">{doc.revisor.initials}</span>
                       </div>
-                      <span className="text-[12px] text-slate-700 whitespace-nowrap">{doc.revisor.name}</span>
+                      <span className="whitespace-nowrap text-[11px] text-[#334155]">{doc.revisor.name}</span>
                     </div>
                   ) : (
-                    <span className="text-slate-400 text-[12px]">—</span>
+                    <span className="text-[11px] text-[#64748B]">—</span>
                   )}
                 </td>
 
                 {/* Estado IA */}
-                <td className="px-4 py-3">
+                <td className="px-5 py-2">
                   <StatusPill status={doc.aiStatus} />
                 </td>
 
                 {/* Estado Humano */}
-                <td className="px-4 py-3">
+                <td className="px-5 py-2">
                   <StatusPill status={doc.humanStatus} />
                 </td>
 
                 {/* Fecha */}
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <span className="text-[12px] text-slate-500">
+                <td className="whitespace-nowrap px-5 py-2">
+                  <span className="text-[11px] text-[#334155]">
                     {doc.fecha}{" "}
-                    <span className="text-slate-400">{doc.hora}</span>
+                    <span className="text-[#64748B]">{doc.hora}</span>
                   </span>
                 </td>
 
                 {/* Acción */}
-                <td className="px-4 py-3">
-                  <button className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors opacity-0 group-hover:opacity-100">
-                    <MoreVertical className="w-4 h-4" />
+                <td className="px-5 py-2">
+                  <button className="flex h-7 w-7 items-center justify-center rounded-[8px] text-[#334155] opacity-100 transition-colors hover:bg-[#EEF2F7]">
+                    <MoreVertical className="h-4 w-4" />
                   </button>
                 </td>
               </tr>

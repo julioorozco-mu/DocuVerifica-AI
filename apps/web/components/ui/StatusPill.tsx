@@ -43,7 +43,7 @@ interface StatusPillProps {
 
 export default function StatusPill({ status }: StatusPillProps) {
   if (!status) {
-    return <span className="text-slate-400 text-xs">—</span>;
+    return <span className="text-[12px] text-slate-400">—</span>;
   }
 
   const variant = LABEL_MAP[status] ?? "pendiente";
@@ -51,7 +51,7 @@ export default function StatusPill({ status }: StatusPillProps) {
 
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${className}`}
+      className={`inline-flex min-w-[62px] items-center justify-center rounded-[6px] border px-2 py-0.5 text-[10px] font-semibold leading-4 ${className}`}
     >
       {label}
     </span>

@@ -12,40 +12,33 @@ export default function ReviewerProductivityCard() {
   const reviewers = reviewerProductivity;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden h-full">
+    <div className="h-[216px] overflow-hidden rounded-[14px] border border-[#E5EAF2] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
       {/* Header */}
-      <div className="px-5 pt-5 pb-3">
-        <p className="text-[13px] font-semibold text-slate-800">
+      <div className="px-5 pt-4 pb-3">
+        <p className="text-[13px] font-semibold text-[#0F172A]">
           Productividad por revisor{" "}
-          <span className="text-slate-400 font-normal">(esta semana)</span>
+          <span className="text-[10px] font-normal text-[#334155]">(esta semana)</span>
         </p>
       </div>
 
       {/* Lista */}
-      <div className="px-5 pb-5 space-y-3">
+      <div className="space-y-1.5 px-5 pb-2">
         {reviewers.map((r) => {
           const pct = Math.round((r.reviews / r.max) * 100);
           return (
             <div key={r.rank} className="flex items-center gap-3">
               {/* Rank */}
-              <span className="text-[11px] text-slate-400 w-3 flex-shrink-0 font-medium">{r.rank}</span>
-
-              {/* Avatar */}
-              <div
-                className={`w-7 h-7 rounded-full ${r.color} flex items-center justify-center flex-shrink-0`}
-              >
-                <span className="text-[10px] font-bold text-white">{r.initials}</span>
-              </div>
+              <span className="w-3 flex-shrink-0 text-[11px] font-medium text-[#334155]">{r.rank}</span>
 
               {/* Nombre + barra */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[12px] font-medium text-slate-700 truncate">{r.name}</span>
-                  <span className="text-[12px] font-semibold text-slate-800 ml-2">{r.reviews}</span>
+                  <span className="truncate text-[11px] font-medium text-[#0F172A]">{r.name}</span>
+                  <span className="ml-2 text-[11px] font-semibold text-[#0F172A]">{r.reviews}</span>
                 </div>
-                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-1.5 overflow-hidden rounded-full bg-[#EEF2F7]">
                   <div
-                    className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                    className="h-full rounded-full bg-[#4F83F7] transition-all duration-500"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -56,8 +49,8 @@ export default function ReviewerProductivityCard() {
       </div>
 
       {/* Footer link */}
-      <div className="border-t border-slate-100 px-5 py-2.5">
-        <button className="text-[12px] font-semibold text-blue-600 hover:text-blue-700">
+      <div className="px-5 pb-3">
+        <button className="text-[11px] font-semibold text-[#2563EB] hover:text-[#1D4ED8]">
           Ver ranking completo →
         </button>
       </div>

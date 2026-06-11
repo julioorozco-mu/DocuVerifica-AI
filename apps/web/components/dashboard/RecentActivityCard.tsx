@@ -25,14 +25,14 @@ export default function RecentActivityCard() {
   const activities = recentActivity;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden h-full">
+    <div className="h-[150px] overflow-hidden rounded-[14px] border border-[#E5EAF2] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-3">
-        <p className="text-[13px] font-semibold text-slate-800">Actividad reciente</p>
+      <div className="flex items-center justify-between px-5 pt-3.5 pb-2">
+        <p className="text-[13px] font-semibold text-[#0F172A]">Actividad reciente</p>
       </div>
 
       {/* Lista */}
-      <div className="px-5 pb-5 space-y-3">
+      <div className="space-y-1.5 px-5 pb-1">
         {activities.map((ev) => {
           const Icon = ICON_MAP[ev.icon] ?? FileText;
           const style = TYPE_STYLE[ev.type] ?? TYPE_STYLE.info;
@@ -40,14 +40,14 @@ export default function RecentActivityCard() {
           return (
             <div key={ev.id} className="flex items-start gap-3">
               {/* Icono */}
-              <div className={`w-7 h-7 rounded-lg ${style.bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                <Icon className={`w-3.5 h-3.5 ${style.icon}`} />
+              <div className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-[7px] ${style.bg}`}>
+                <Icon className={`h-3 w-3 ${style.icon}`} />
               </div>
 
               {/* Texto */}
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] text-slate-700 leading-snug font-medium">{ev.message}</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="text-[10px] font-semibold leading-snug text-[#0F172A]">{ev.message}</p>
+                <p className="mt-0.5 text-[9px] text-[#64748B]">
                   {ev.actor} • {ev.time}
                 </p>
               </div>
@@ -57,9 +57,9 @@ export default function RecentActivityCard() {
       </div>
 
       {/* Footer link */}
-      <div className="border-t border-slate-100 px-5 py-2.5 flex justify-end">
-        <button className="text-[12px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
-          Ver toda la actividad <ArrowRight className="w-3 h-3" />
+      <div className="flex justify-end px-5 pb-3">
+        <button className="flex items-center gap-1 text-[10px] font-semibold text-[#2563EB] hover:text-[#1D4ED8]">
+          Ver toda la actividad <ArrowRight className="h-3 w-3" />
         </button>
       </div>
     </div>

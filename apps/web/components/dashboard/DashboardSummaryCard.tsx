@@ -13,82 +13,82 @@ export default function DashboardSummaryCard() {
   const d = dashboardSummary;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="min-h-[128px] overflow-hidden rounded-[14px] border border-[#E5EAF2] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
       {/* Encabezado */}
-      <div className="px-5 pt-5 pb-4 border-b border-slate-100">
-        <p className="text-[13px] font-semibold text-slate-800">Resumen operativo</p>
-        <p className="text-[11px] text-slate-500 mt-0.5">Panorama general del sistema</p>
+      <div className="px-5 pt-3 pb-2.5">
+        <p className="text-[14px] font-semibold text-[#0F172A]">Resumen operativo</p>
+        <p className="mt-1 text-[11px] text-[#334155]">Panorama general del sistema</p>
       </div>
 
       {/* 4 métricas */}
-      <div className="grid grid-cols-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 px-5 sm:grid-cols-4">
         {/* Total */}
-        <div className="px-5 py-4 border-r border-b sm:border-b-0 border-slate-100">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-              <FileText className="w-4 h-4 text-blue-500" />
+        <div className="border-r border-b border-[#E5EAF2] py-2 pr-3 sm:border-b-0">
+          <div className="mb-1 flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-[7px] bg-[#EEF4FF]">
+              <FileText className="h-3.5 w-3.5 text-[#2563EB]" />
             </div>
-            <span className="text-[11px] text-slate-500 font-medium leading-tight">Documentos totales</span>
+            <span className="text-[10px] font-medium leading-tight text-[#64748B]">Documentos totales</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900 tracking-tight">
+          <p className="text-[22px] font-bold leading-none tracking-[-0.01em] text-[#0F172A]">
             {d.totalDocumentos.toLocaleString("es-MX")}
           </p>
-          <p className="text-[11px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" />
+          <p className="mt-1.5 flex items-center gap-1 text-[9px] font-semibold text-emerald-600">
+            <TrendingUp className="h-3 w-3" />
             {d.tendencia}
           </p>
         </div>
 
         {/* Completados */}
-        <div className="px-5 py-4 border-r border-b sm:border-b-0 border-slate-100">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+        <div className="border-r border-b border-[#E5EAF2] px-3 py-2 sm:border-b-0">
+          <div className="mb-1 flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-[7px] bg-emerald-50">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
             </div>
-            <span className="text-[11px] text-slate-500 font-medium leading-tight">Completados</span>
+            <span className="text-[10px] font-medium leading-tight text-[#64748B]">Completados</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900 tracking-tight">
+          <p className="text-[22px] font-bold leading-none tracking-[-0.01em] text-[#0F172A]">
             {d.completados.toLocaleString("es-MX")}
           </p>
-          <p className="text-[11px] text-slate-500 mt-1">{d.completadosPct}% del total</p>
+          <p className="mt-1.5 text-[9px] text-[#64748B]">{d.completadosPct}% del total</p>
         </div>
 
         {/* En procesamiento */}
-        <div className="px-5 py-4 border-r border-slate-100">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
-              <Clock4 className="w-4 h-4 text-amber-500" />
+        <div className="border-r border-[#E5EAF2] px-3 py-2">
+          <div className="mb-1 flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-[7px] bg-violet-50">
+              <Clock4 className="h-3.5 w-3.5 text-violet-600" />
             </div>
-            <span className="text-[11px] text-slate-500 font-medium leading-tight">En procesamiento</span>
+            <span className="text-[10px] font-medium leading-tight text-[#64748B]">En procesamiento</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900 tracking-tight">
+          <p className="text-[22px] font-bold leading-none tracking-[-0.01em] text-[#0F172A]">
             {d.enProcesamiento.toLocaleString("es-MX")}
           </p>
-          <p className="text-[11px] text-slate-500 mt-1">{d.enProcesamientoPct}% del total</p>
+          <p className="mt-1.5 text-[9px] text-[#2563EB]">{d.enProcesamientoPct}% del total</p>
         </div>
 
         {/* Requieren atención */}
-        <div className="px-5 py-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
-              <AlertTriangle className="w-4 h-4 text-red-500" />
+        <div className="py-2 pl-3">
+          <div className="mb-1 flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-[7px] bg-orange-50">
+              <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
             </div>
-            <span className="text-[11px] text-slate-500 font-medium leading-tight">Requieren atención</span>
+            <span className="text-[10px] font-medium leading-tight text-[#64748B]">Requieren atención</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900 tracking-tight">
+          <p className="text-[22px] font-bold leading-none tracking-[-0.01em] text-[#0F172A]">
             {d.requierenAtencion.toLocaleString("es-MX")}
           </p>
-          <p className="text-[11px] text-slate-500 mt-1">{d.requierenAtencionPct}% del total</p>
+          <p className="mt-1.5 text-[9px] text-red-600">{d.requierenAtencionPct}% del total</p>
         </div>
       </div>
 
       {/* Insight footer */}
-      <div className="px-5 py-3 bg-blue-50 border-t border-blue-100 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Zap className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
-          <p className="text-[11px] text-blue-700 font-medium">{d.insight}</p>
+      <div className="mx-4 mt-2 mb-2 flex items-center justify-between gap-4 rounded-[9px] border border-[#D7E3F8] bg-[#F2F7FF] px-4 py-1.5">
+        <div className="flex items-center gap-3">
+          <Zap className="h-4 w-4 flex-shrink-0 text-[#2563EB]" />
+          <p className="text-[10px] font-medium text-[#2563EB]">{d.insight}</p>
         </div>
-        <button className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 whitespace-nowrap">
+        <button className="whitespace-nowrap rounded-[7px] border border-[#BFD3FA] bg-white px-4 py-1.5 text-[10px] font-semibold text-[#2563EB] hover:text-[#1D4ED8]">
           Ver reportes
         </button>
       </div>

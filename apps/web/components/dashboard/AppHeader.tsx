@@ -5,8 +5,6 @@
  */
 import React, { useState } from "react";
 import { Search, Bell, ChevronDown } from "lucide-react";
-import { useTheme } from "next-themes";
-import { Sun, Moon } from "lucide-react";
 
 interface AppHeaderProps {
   title?: string;
@@ -22,66 +20,50 @@ export default function AppHeader({
   userProfile,
 }: AppHeaderProps) {
   const [query, setQuery] = useState("");
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => setMounted(true), []);
 
   const displayName = userProfile?.name ?? "Usuario";
   const displayRole = userProfile?.role ?? "Revisor";
   const initials = userProfile?.initials ?? displayName.substring(0, 2).toUpperCase();
 
   return (
-    <header className="h-14 flex items-center justify-between gap-4 px-6 bg-white border-b border-slate-200 sticky top-0 z-20">
+    <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between gap-5 border-b border-[#E5EAF2] bg-white px-6">
       {/* Título */}
-      <h1 className="text-[18px] font-bold text-slate-900 whitespace-nowrap leading-none">
+      <h1 className="whitespace-nowrap text-[24px] font-bold leading-none tracking-[-0.01em] text-[#0F172A]">
         {title}
       </h1>
 
       {/* Buscador */}
-      <div className="flex-1 max-w-md relative hidden md:block">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+      <div className="relative hidden w-full max-w-[500px] md:block">
+        <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#334155]" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar documentos, folios, revisores..."
-          className="w-full h-9 pl-9 pr-4 text-[13px] rounded-xl border border-slate-200 bg-slate-50 text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:bg-white transition-all"
+          className="h-12 w-full rounded-[10px] border border-[#DDE5F0] bg-white pl-12 pr-4 text-[14px] text-[#334155] shadow-[0_4px_16px_rgba(15,23,42,0.03)] placeholder:text-[#64748B] focus:border-[#2563EB] focus:outline-none focus:ring-4 focus:ring-blue-100"
         />
       </div>
 
       {/* Acciones derechas */}
-      <div className="flex items-center gap-2">
-        {/* Toggle tema */}
-        {mounted && (
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 transition-colors"
-            title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-          >
-            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-        )}
-
+      <div className="flex items-center gap-4">
         {/* Notificaciones */}
-        <button className="relative w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 transition-colors">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 border border-white" />
+        <button className="relative flex h-10 w-10 items-center justify-center rounded-[10px] text-[#334155] transition-colors hover:bg-[#F5F8FC]">
+          <Bell className="h-5 w-5" />
+          <span className="absolute right-1.5 top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+            3
+          </span>
         </button>
 
-        {/* Separador */}
-        <div className="w-px h-6 bg-slate-200 mx-1" />
-
         {/* Avatar + nombre */}
-        <button className="flex items-center gap-2.5 hover:bg-slate-50 rounded-xl px-2 py-1.5 transition-colors">
-          <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-            <span className="text-[11px] font-bold text-white">{initials}</span>
+        <button className="flex h-12 items-center gap-3 rounded-[10px] border border-[#E5EAF2] bg-white px-3 transition-colors hover:bg-[#F8FAFC]">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-[#EEF4FF]">
+            <span className="text-[14px] font-bold text-[#2563EB]">{initials}</span>
           </div>
           <div className="hidden sm:block text-left">
-            <p className="text-[12px] font-semibold text-slate-800 leading-none">{displayName}</p>
-            <p className="text-[10px] text-slate-500 mt-0.5 leading-none capitalize">{displayRole}</p>
+            <p className="text-[13px] font-semibold leading-none text-[#0F172A]">{displayName}</p>
+            <p className="mt-1 text-[11px] capitalize leading-none text-[#64748B]">{displayRole}</p>
           </div>
-          <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
+          <ChevronDown className="hidden h-4 w-4 text-[#334155] sm:block" />
         </button>
       </div>
     </header>

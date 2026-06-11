@@ -8,9 +8,6 @@ import {
   FileText, Cpu, CheckCircle2, AlertTriangle,
   TrendingUp, TrendingDown, ArrowRight
 } from "lucide-react";
-import {
-  ResponsiveContainer, LineChart, Line, BarChart, Bar
-} from "recharts";
 
 export interface KpiCardData {
   id: string;
@@ -45,59 +42,76 @@ interface Props {
 export default function DashboardKpiCard({ data }: Props) {
   const Icon = ICON_MAP[data.icon];
   const c = COLOR_MAP[data.color];
-  const sparkData = data.sparkline.map((v, i) => ({ i, v }));
-
   const isAlert = data.id === "alertas_criticas";
+  const isBarChart = isAlert || data.id === "revisados_hoy";
   const TrendIcon = data.trendPositive ? TrendingUp : TrendingDown;
+  const min = Math.min(...data.sparkline);
+  const max = Math.max(...data.sparkline);
+  const range = Math.max(max - min, 1);
+  const points = data.sparkline
+    .map((value, index) => {
+      const x = (index / Math.max(data.sparkline.length - 1, 1)) * 112;
+      const y = 22 - ((value - min) / range) * 18;
+      return `${x},${y}`;
+    })
+    .join(" ");
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-3 min-h-[160px]">
+    <div className="flex min-h-[128px] flex-col rounded-[14px] border border-[#E5EAF2] bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-[12px] font-semibold text-slate-600">{data.label}</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">{data.sublabel}</p>
+          <p className="whitespace-nowrap text-[12px] font-medium text-[#334155]">{data.label}</p>
         </div>
-        <div className={`w-8 h-8 rounded-lg ${c.bg} flex items-center justify-center flex-shrink-0`}>
-          <Icon className={`w-4 h-4 ${c.icon}`} />
+        <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] ${c.bg}`}>
+          <Icon className={`h-[18px] w-[18px] ${c.icon}`} />
         </div>
       </div>
 
       {/* Valor */}
-      <p className={`text-3xl font-bold tracking-tight ${isAlert ? c.text : "text-slate-900"}`}>
+      <p className={`mt-1 text-[25px] font-bold leading-none tracking-[-0.02em] ${isAlert ? c.text : "text-[#2563EB]"}`}>
         {data.value}
       </p>
+      <p className="mt-1.5 text-[9px] text-[#64748B]">{data.sublabel}</p>
 
       {/* Sparkline */}
-      <div className="flex-1 min-h-[40px]">
-        <ResponsiveContainer width="100%" height={40}>
-          {isAlert ? (
-            <BarChart data={sparkData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-              <Bar dataKey="v" fill={c.line} radius={[2, 2, 0, 0]} barSize={8} />
-            </BarChart>
-          ) : (
-            <LineChart data={sparkData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
-              <Line
-                type="monotone"
-                dataKey="v"
-                stroke={c.line}
-                strokeWidth={2}
-                dot={false}
+      <div className="mt-1.5 h-[24px]">
+        {isBarChart ? (
+          <div className="flex h-full items-end gap-1">
+            {data.sparkline.concat(data.sparkline).map((value, index) => (
+              <span
+                key={`${value}-${index}`}
+                className="w-1 rounded-t-[2px]"
+                style={{
+                  height: `${6 + ((value - min) / range) * 18}px`,
+                  backgroundColor: c.line,
+                }}
               />
-            </LineChart>
-          )}
-        </ResponsiveContainer>
+            ))}
+          </div>
+        ) : (
+          <svg viewBox="0 0 112 24" className="h-full w-full" aria-hidden="true">
+            <polyline
+              points={points}
+              fill="none"
+              stroke={c.line}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+            />
+          </svg>
+        )}
       </div>
 
       {/* Trend */}
-      <div className="flex items-center justify-between">
+      <div className="mt-auto flex items-center justify-between pt-1.5">
         {isAlert ? (
-          <a href="#" className={`text-[11px] font-semibold ${c.trend} flex items-center gap-1`}>
-            {data.trend} <ArrowRight className="w-3 h-3" />
+          <a href="#" className={`text-[10px] font-semibold ${c.trend} flex items-center gap-1`}>
+            {data.trend} <ArrowRight className="h-3 w-3" />
           </a>
         ) : (
-          <p className={`text-[11px] font-semibold flex items-center gap-1 ${c.trend}`}>
-            <TrendIcon className="w-3 h-3" />
+          <p className={`flex items-center gap-1 text-[10px] font-semibold ${c.trend}`}>
+            <TrendIcon className="h-3 w-3" />
             {data.trend}
           </p>
         )}
