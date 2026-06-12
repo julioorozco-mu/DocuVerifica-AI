@@ -50,7 +50,6 @@ export const mockUsers: MockUser[] = [
     lastAccess: "16/05/2025 09:42",
     initials: "AG",
     color: "bg-blue-600",
-    isCurrentUser: true,
     permissions: defaultPermissionsByRole.Administrador,
   },
   {

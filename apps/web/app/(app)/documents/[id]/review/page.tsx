@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, use } from "react";
-import NavigationLayout from "@/components/NavigationLayout";
+import { useSetHeader } from "@/context/HeaderContext";
 import { AIReviewChecklist } from "@/components/documents/AIReviewChecklist";
 import dynamic from "next/dynamic";
 const PDFViewer = dynamic(() => import("@/components/PDFViewer"), { ssr: false });
@@ -34,6 +34,7 @@ interface FileState {
 }
 
 export default function DocumentReviewPage({ params }: WorkspaceProps) {
+  useSetHeader("Revisión de Documento", "Documentos / Revisión IA");
   const unwrappedParams = use(params);
   const docId = unwrappedParams.id;
   
@@ -131,18 +132,18 @@ export default function DocumentReviewPage({ params }: WorkspaceProps) {
 
   if (loading || !docId) {
     return (
-      <NavigationLayout>
+      <main className="flex-1 overflow-auto p-5 lg:p-6">
         <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh]">
           <Loader2 className="w-10 h-10 text-indigo-500 animate-spin mb-4" />
-          <p className="text-slate-400 text-sm">Cargando área de trabajo de revisión...</p>
+          <p className="text-slate-400 text-sm">Cargando revisión...</p>
         </div>
-      </NavigationLayout>
+      </main>
     );
   }
 
   if (!document) {
     return (
-      <NavigationLayout>
+      <main className="flex-1 overflow-auto p-5 lg:p-6">
         <div className="text-center py-12 text-slate-400">
           <p className="text-lg font-semibold">El expediente solicitado no existe.</p>
           <Link href="/documents" className="mt-4 inline-block">
@@ -151,7 +152,7 @@ export default function DocumentReviewPage({ params }: WorkspaceProps) {
             </Button>
           </Link>
         </div>
-      </NavigationLayout>
+      </main>
     );
   }
 
@@ -159,7 +160,7 @@ export default function DocumentReviewPage({ params }: WorkspaceProps) {
   const fileError = fileState?.docId === docId ? fileState.error : null;
 
   return (
-    <NavigationLayout>
+    <main className="flex-1 overflow-auto p-5 lg:p-6">
       <div className="flex flex-col h-[calc(100vh-6rem)] space-y-4">
         
         {/* Cabecera Workspace */}
@@ -336,6 +337,6 @@ export default function DocumentReviewPage({ params }: WorkspaceProps) {
 
         </div>
       </div>
-    </NavigationLayout>
+    </main>
   );
 }

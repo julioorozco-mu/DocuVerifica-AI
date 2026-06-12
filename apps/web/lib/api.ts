@@ -24,6 +24,7 @@ export interface UserProfile {
   email: string;
   full_name: string;
   role: "admin" | "revisor";
+  status?: string;
   created_at: string;
 }
 
@@ -264,6 +265,23 @@ export const api = {
   getFileUrl(docId: string): string {
     const token = this.getToken();
     return `${API_BASE_URL}/documents/${docId}/file${token ? `?token=${token}` : ""}`;
+  },
+
+  // Users CRUD
+  async getUsers(): Promise<UserProfile[]> {
+    return this.get<UserProfile[]>("/users");
+  },
+
+  async createUser(userData: Record<string, unknown>): Promise<UserProfile> {
+    return this.post<UserProfile>("/users", userData);
+  },
+
+  async updateUser(userId: string, userData: Record<string, unknown>): Promise<UserProfile> {
+    return this.put<UserProfile>(`/users/${userId}`, userData);
+  },
+
+  async deleteUser(userId: string): Promise<void> {
+    return this.delete(`/users/${userId}`);
   },
 
   // Helper para realizar llamadas directas con token si es necesario

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import NavigationLayout from "@/components/NavigationLayout";
+import { useSetHeader } from "@/context/HeaderContext";
 import { CriteriaList } from "@/components/criteria/CriteriaList";
 import { CriteriaEditor } from "@/components/criteria/CriteriaEditor";
 import { AISimulator } from "@/components/criteria/AISimulator";
@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 
 export default function CriteriaPage() {
   const [criteria, setCriteria] = useState<ReviewCriterion[]>([]);
+  useSetHeader("Criterios de Revisión", "Criterios / Gestión");
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -129,19 +130,19 @@ export default function CriteriaPage() {
 
   if (loading) {
     return (
-      <NavigationLayout>
+        <main className="flex-1 overflow-auto p-5 lg:p-6">
         <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh]">
           <Loader2 className="w-10 h-10 text-indigo-500 animate-spin mb-4" />
           <p className="text-slate-400 text-sm">Cargando criterios de revisión...</p>
         </div>
-      </NavigationLayout>
+        </main>
     );
   }
 
   const showEditor = isCreating || selectedId !== null;
 
   return (
-    <NavigationLayout>
+      <main className="flex-1 overflow-auto p-5 lg:p-6">
       <div className="flex flex-col h-[calc(100vh-10rem)] gap-4">
         {/* Cabecera */}
         <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 flex-shrink-0">
@@ -230,6 +231,6 @@ export default function CriteriaPage() {
           </div>
         </div>
       </div>
-    </NavigationLayout>
+      </main>
   );
 }

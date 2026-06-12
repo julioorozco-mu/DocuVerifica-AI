@@ -4,8 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, DashboardMetrics, UserProfile } from "@/lib/api";
 
-import AppHeader from "@/components/dashboard/AppHeader";
-import AppSidebar from "@/components/dashboard/AppSidebar";
+import { useSetHeader, useHeader } from "@/context/HeaderContext";
 import AiQueueStatusCard from "@/components/dashboard/AiQueueStatusCard";
 import CriticalAlertsCard, { CriticalAlertItem } from "@/components/dashboard/CriticalAlertsCard";
 import DashboardKpiCard from "@/components/dashboard/DashboardKpiCard";
@@ -312,7 +311,9 @@ function DashboardLoadingSkeleton() {
 
 export default function DashboardClient() {
   const { push } = useRouter();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const { profile } = useHeader();
+  useSetHeader("Dashboard principal");
+
   const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
 
@@ -329,16 +330,10 @@ export default function DashboardClient() {
           console.error("No se pudieron cargar métricas reales del dashboard.", error);
           return null;
         });
-        const [profileData, metrics] = await Promise.all([
-          api.get<UserProfile>("/auth/me"),
-          metricsRequest,
-        ]);
-
-        setProfile(profileData);
+        const metrics = await metricsRequest;
         setDashboardMetrics(metrics);
       } catch {
-        api.logout();
-        push("/login");
+        // Error silenciado, se mantiene loadingSkeleton o vacio si falla
       } finally {
         setLoadingDashboard(false);
       }
@@ -347,13 +342,6 @@ export default function DashboardClient() {
     fetchDashboard();
   }, [push]);
 
-  const userForHeader = profile
-    ? {
-        name: profile.full_name ?? "Usuario",
-        role: profile.role === "admin" ? "Administrador/a" : "Revisor/a",
-        initials: getInitials(profile.full_name),
-      }
-    : null;
   const isReviewer = profile?.role === "revisor";
 
   const dashboardData = useMemo(
@@ -371,18 +359,8 @@ export default function DashboardClient() {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F8FAFC] font-sans text-[#0F172A]">
-      <AppSidebar userRole={profile?.role} />
-
-      <div className="flex-1 flex flex-col min-w-0">
-        <AppHeader
-          title="Dashboard principal"
-          userProfile={userForHeader}
-          isUserLoading={loadingDashboard}
-        />
-
-        <main className="flex-1 overflow-auto px-5 py-1 lg:px-6">
-          {loadingDashboard ? (
+    <main className="flex-1 overflow-auto px-5 py-1 lg:px-6">
+      {loadingDashboard ? (
             <DashboardLoadingSkeleton />
           ) : (
           <div className="space-y-3">
@@ -417,7 +395,5 @@ export default function DashboardClient() {
           </div>
           )}
         </main>
-      </div>
-    </div>
   );
 }

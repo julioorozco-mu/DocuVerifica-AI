@@ -23,9 +23,10 @@ const NAV_ITEMS = [
 
 interface AppSidebarProps {
   userRole?: string;
+  isLoading?: boolean;
 }
 
-export default function AppSidebar({ userRole }: AppSidebarProps) {
+export default function AppSidebar({ userRole, isLoading = false }: AppSidebarProps) {
   const pathname = usePathname();
 
   // Filtrar según rol si hace falta
@@ -49,30 +50,39 @@ export default function AppSidebar({ userRole }: AppSidebarProps) {
 
       {/* Navegación principal */}
       <nav className="space-y-3 px-3.5 py-2">
-        {visibleItems.map(({ href, label, icon: Icon }) => {
-          const isActive =
-            pathname === href ||
-            (href !== "/dashboard" && pathname.startsWith(href));
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`relative flex h-[46px] items-center gap-3.5 rounded-[9px] px-5 text-[14px] font-medium transition-colors
-                ${isActive
-                  ? "bg-[#EEF4FF] text-[#0B56F0] font-semibold"
-                  : "text-[#334155] hover:bg-[#F5F8FC] hover:text-[#0F172A]"
-                }`}
-            >
-              {isActive && (
-                <span className="absolute left-[-14px] top-2 h-8 w-1 rounded-r-full bg-[#2563EB]" />
-              )}
-              <Icon
-                className={`h-[18px] w-[18px] flex-shrink-0 ${isActive ? "text-[#2563EB]" : "text-[#475569]"}`}
-              />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
+        {isLoading ? (
+          Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex h-[46px] w-full items-center gap-3.5 rounded-[9px] px-5">
+              <div className="h-[18px] w-[18px] flex-shrink-0 rounded-md bg-[#F1F5F9] animate-pulse" />
+              <div className="h-4 w-24 rounded-md bg-[#F1F5F9] animate-pulse" />
+            </div>
+          ))
+        ) : (
+          visibleItems.map(({ href, label, icon: Icon }) => {
+            const isActive =
+              pathname === href ||
+              (href !== "/dashboard" && pathname.startsWith(href));
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`relative flex h-[46px] items-center gap-3.5 rounded-[9px] px-5 text-[14px] font-medium transition-colors
+                  ${isActive
+                    ? "bg-[#EEF4FF] text-[#0B56F0] font-semibold"
+                    : "text-[#334155] hover:bg-[#F5F8FC] hover:text-[#0F172A]"
+                  }`}
+              >
+                {isActive && (
+                  <span className="absolute left-[-14px] top-2 h-8 w-1 rounded-r-full bg-[#2563EB]" />
+                )}
+                <Icon
+                  className={`h-[18px] w-[18px] flex-shrink-0 ${isActive ? "text-[#2563EB]" : "text-[#475569]"}`}
+                />
+                <span>{label}</span>
+              </Link>
+            );
+          })
+        )}
       </nav>
 
       {/* Tarjeta IA Local Activa */}

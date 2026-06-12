@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     STORAGE_DIR: str = str(PROJECT_ROOT / "storage" / "documents")
     SUPABASE_URL: str = "http://127.0.0.1:54321"
     SUPABASE_ANON_KEY: str = ""
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
     REDIS_URL: str = "redis://127.0.0.1:6379/0"
     OLLAMA_BASE_URL: str = Field(default="http://localhost:11434")
     OLLAMA_MODEL: str = Field(default="qwen3.5:9b")

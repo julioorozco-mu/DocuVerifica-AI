@@ -19,15 +19,25 @@ class LoginRequest(BaseModel):
 
 
 # --- Perfiles de Usuario ---
+class UserCreateRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=6)
+    full_name: str
+    role: str = Field(default="revisor", pattern="^(admin|revisor)$")
+    status: str = Field(default="Activo", pattern="^(Activo|Inactivo|Pendiente)$")
+
 class ProfileUpdate(BaseModel):
     full_name: Optional[str] = None
     role: Optional[str] = Field(default=None, pattern="^(admin|revisor)$")
+    status: Optional[str] = Field(default=None, pattern="^(Activo|Inactivo|Pendiente)$")
+    password: Optional[str] = Field(default=None, min_length=6)
 
 class ProfileResponse(BaseModel):
     id: UUID
     email: str
     full_name: str
     role: str
+    status: str
     created_at: datetime
 
     model_config = {"from_attributes": True}

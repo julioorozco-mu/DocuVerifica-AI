@@ -17,10 +17,12 @@ import {
   UserCheck,
   UserX,
   X,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
 } from "lucide-react";
 
-import AppHeader from "@/components/dashboard/AppHeader";
-import AppSidebar from "@/components/dashboard/AppSidebar";
+import { useSetHeader, useHeader } from "@/context/HeaderContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,49 +36,30 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api, UserProfile } from "@/lib/api";
-import {
-  defaultPermissionsByRole,
-  mockUsers,
-  userPermissions,
-  MockUser,
-  UserPermission,
-  UserRole,
-  UserStatus,
-} from "@/lib/mock-users-data";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type PanelMode = "create" | "detail" | "edit";
 
 interface UserFormState {
   fullName: string;
   email: string;
-  role: UserRole;
-  password: string;
-  confirmPassword: string;
-  status: UserStatus;
-  permissions: UserPermission[];
+  role: "admin" | "revisor";
+  password: "";
+  confirmPassword: "";
+  status: "Activo" | "Inactivo" | "Pendiente";
 }
 
-const roleOptions: Array<"Todos los roles" | UserRole> = ["Todos los roles", "Administrador", "Revisor"];
-const statusOptions: Array<"Todos los estados" | UserStatus> = ["Todos los estados", "Activo", "Inactivo", "Pendiente"];
+const roleOptions: Array<"Todos los roles" | "admin" | "revisor"> = ["Todos los roles", "admin", "revisor"];
+const statusOptions: Array<"Todos los estados" | "Activo" | "Inactivo" | "Pendiente"> = ["Todos los estados", "Activo", "Inactivo", "Pendiente"];
 
 const emptyForm: UserFormState = {
   fullName: "",
   email: "",
-  role: "Revisor",
+  role: "revisor",
   password: "",
   confirmPassword: "",
   status: "Activo",
-  permissions: defaultPermissionsByRole.Revisor,
-};
-
-const permissionLabels: Record<UserPermission, string> = {
-  "Acceso al dashboard": "Acceso al dashboard",
-  "Gestion de documentos": "Gestión de documentos",
-  "Revision de documentos": "Revisión de documentos",
-  "Gestion de criterios": "Gestión de criterios",
-  "Acceso a reportes": "Acceso a reportes",
-  "Administracion del sistema": "Administración del sistema",
 };
 
 function getInitials(name?: string | null): string {
@@ -88,109 +71,80 @@ function getInitials(name?: string | null): string {
     .toUpperCase();
 }
 
-function RoleBadge({ role }: { role: UserRole }) {
+function RoleBadge({ role }: { role: string }) {
   return (
     <Badge
       variant="secondary"
       className={cn(
         "h-6 rounded-[6px] border px-2 text-[12px] font-semibold",
-        role === "Administrador"
+        role === "admin"
           ? "border-violet-100 bg-violet-50 text-violet-700"
           : "border-blue-100 bg-blue-50 text-[#2563EB]"
       )}
     >
-      {role}
+      {role === "admin" ? "Administrador" : "Revisor"}
     </Badge>
   );
 }
 
-function StatusBadge({ status }: { status: UserStatus }) {
-  const styles = {
+function StatusBadge({ status }: { status: string }) {
+  const styles: Record<string, string> = {
     Activo: "border-emerald-100 bg-emerald-50 text-emerald-700",
     Inactivo: "border-red-100 bg-red-50 text-red-600",
     Pendiente: "border-amber-100 bg-amber-50 text-amber-700",
   };
 
   return (
-    <Badge variant="secondary" className={cn("h-6 rounded-[6px] border px-2 text-[12px] font-semibold", styles[status])}>
+    <Badge variant="secondary" className={cn("h-6 rounded-[6px] border px-2 text-[12px] font-semibold", styles[status] || styles["Pendiente"])}>
       {status}
     </Badge>
   );
 }
 
-function userToForm(user: MockUser): UserFormState {
+function userToForm(user: UserProfile): UserFormState {
   return {
-    fullName: user.fullName,
+    fullName: user.full_name,
     email: user.email,
     role: user.role,
-    password: "********",
-    confirmPassword: "********",
-    status: user.status,
-    permissions: user.permissions,
-  };
-}
-
-function buildUserFromForm(form: UserFormState): MockUser {
-  return {
-    id: `usr-${Date.now()}`,
-    fullName: form.fullName || "Nuevo usuario",
-    email: form.email || "usuario@docuverifica.com",
-    role: form.role,
-    status: form.status,
-    lastAccess: "-",
-    initials: getInitials(form.fullName || "NU"),
-    color: form.role === "Administrador" ? "bg-blue-600" : "bg-sky-500",
-    permissions: form.permissions,
+    password: "",
+    confirmPassword: "",
+    status: (user.status as any) || "Activo",
   };
 }
 
 export default function UsersPage() {
-  const router = useRouter();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
-  const [users, setUsers] = useState<MockUser[]>(mockUsers);
+  const { profile } = useHeader();
+  useSetHeader("Usuarios", "Usuarios / Gestión de usuarios");
+
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<(typeof roleOptions)[number]>("Todos los roles");
   const [statusFilter, setStatusFilter] = useState<(typeof statusOptions)[number]>("Todos los estados");
+  
   const [panelMode, setPanelMode] = useState<PanelMode>("create");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [form, setForm] = useState<UserFormState>(emptyForm);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const fetchUsers = async () => {
+    try {
+      setIsLoading(true);
+      const data = await api.getUsers();
+      setUsers(data);
+    } catch (error: any) {
+      toast.error(error.message || "Error al cargar los usuarios");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      const token = api.getToken();
-      if (!token) {
-        router.push("/login");
-        return;
-      }
-
-      try {
-        const data = await api.get<UserProfile>("/auth/me");
-        setProfile(data);
-        setUsers((current) =>
-          current.map((user) => ({
-            ...user,
-            isCurrentUser: user.email === data.email || user.isCurrentUser,
-          }))
-        );
-      } catch {
-        api.logout();
-        router.push("/login");
-      } finally {
-        setLoadingProfile(false);
-      }
-    };
-
-    fetchProfile();
-  }, [router]);
-
-  const userForHeader = profile
-    ? {
-        name: profile.full_name ?? "Usuario",
-        role: profile.role === "admin" ? "Administrador" : "Revisor",
-        initials: getInitials(profile.full_name),
-      }
-    : null;
+    fetchUsers();
+  }, []);
 
   const filteredUsers = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -198,15 +152,29 @@ export default function UsersPage() {
     return users.filter((user) => {
       const matchesSearch =
         !normalizedSearch ||
-        user.fullName.toLowerCase().includes(normalizedSearch) ||
+        user.full_name.toLowerCase().includes(normalizedSearch) ||
         user.email.toLowerCase().includes(normalizedSearch) ||
         user.role.toLowerCase().includes(normalizedSearch);
       const matchesRole = roleFilter === "Todos los roles" || user.role === roleFilter;
-      const matchesStatus = statusFilter === "Todos los estados" || user.status === statusFilter;
+      const userStatus = user.status || "Activo";
+      const matchesStatus = statusFilter === "Todos los estados" || userStatus === statusFilter;
 
       return matchesSearch && matchesRole && matchesStatus;
     });
   }, [roleFilter, searchTerm, statusFilter, users]);
+
+  // Pagination logic
+  const totalUsers = filteredUsers.length;
+  const totalPages = Math.max(1, Math.ceil(totalUsers / pageSize));
+  
+  // Reset page if filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, roleFilter, statusFilter, pageSize]);
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalUsers);
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
   const selectedUser = selectedUserId ? users.find((user) => user.id === selectedUserId) ?? null : null;
   const isReadOnly = panelMode === "detail";
@@ -217,76 +185,83 @@ export default function UsersPage() {
     setForm(emptyForm);
   };
 
-  const openDetail = (user: MockUser) => {
+  const openDetail = (user: UserProfile) => {
     setPanelMode("detail");
     setSelectedUserId(user.id);
     setForm(userToForm(user));
   };
 
-  const openEdit = (user: MockUser) => {
+  const openEdit = (user: UserProfile) => {
     setPanelMode("edit");
     setSelectedUserId(user.id);
     setForm(userToForm(user));
   };
 
-  const updateRole = (role: UserRole) => {
-    setForm((current) => ({
-      ...current,
-      role,
-      permissions: role === "Administrador" ? defaultPermissionsByRole.Administrador : defaultPermissionsByRole.Revisor,
-    }));
-  };
-
-  const togglePermission = (permission: UserPermission) => {
-    setForm((current) => {
-      const enabled = current.permissions.includes(permission);
-      return {
-        ...current,
-        permissions: enabled
-          ? current.permissions.filter((item) => item !== permission)
-          : [...current.permissions, permission],
-      };
-    });
-  };
-
-  const submitForm = () => {
-    if (panelMode === "edit" && selectedUserId) {
-      setUsers((current) =>
-        current.map((user) =>
-          user.id === selectedUserId
-            ? {
-                ...user,
-                fullName: form.fullName,
-                email: form.email,
-                role: form.role,
-                status: form.status,
-                initials: getInitials(form.fullName),
-                permissions: form.permissions,
-              }
-            : user
-        )
-      );
+  const submitForm = async () => {
+    if (panelMode === "create" && form.password !== form.confirmPassword) {
+      toast.error("Las contraseñas no coinciden");
+      return;
+    }
+    if (panelMode === "create" && form.password.length < 6) {
+      toast.error("La contraseña debe tener al menos 6 caracteres");
       return;
     }
 
-    const newUser = buildUserFromForm(form);
-    setUsers((current) => [newUser, ...current]);
-    setPanelMode("edit");
-    setSelectedUserId(newUser.id);
-  };
+    try {
+      setIsSaving(true);
+      const payload: any = {
+        full_name: form.fullName,
+        email: form.email,
+        role: form.role,
+        status: form.status,
+      };
 
-  const setUserStatus = (user: MockUser, status: UserStatus) => {
-    setUsers((current) => current.map((item) => (item.id === user.id ? { ...item, status } : item)));
-    if (selectedUserId === user.id) {
-      setForm((current) => ({ ...current, status }));
+      if (form.password) {
+        payload.password = form.password;
+      }
+
+      if (panelMode === "edit" && selectedUserId) {
+        await api.updateUser(selectedUserId, payload);
+        toast.success("Usuario actualizado correctamente");
+      } else {
+        await api.createUser(payload);
+        toast.success("Usuario creado correctamente");
+      }
+      
+      await fetchUsers();
+      resetCreateMode();
+    } catch (error: any) {
+      toast.error(error.message || "Error al guardar el usuario");
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const deleteUser = (user: MockUser) => {
-    const confirmed = window.confirm(`Eliminar usuario: ${user.fullName}`);
+  const setUserStatus = async (user: UserProfile, status: string) => {
+    try {
+      await api.updateUser(user.id, { status });
+      toast.success("Estado actualizado");
+      await fetchUsers();
+      if (selectedUserId === user.id) {
+        setForm((current) => ({ ...current, status: status as any }));
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Error al actualizar estado");
+    }
+  };
+
+  const deleteUser = async (user: UserProfile) => {
+    const confirmed = window.confirm(`¿Estás seguro de eliminar permanentemente al usuario: ${user.full_name}?`);
     if (!confirmed) return;
-    setUsers((current) => current.filter((item) => item.id !== user.id));
-    if (selectedUserId === user.id) resetCreateMode();
+    
+    try {
+      await api.deleteUser(user.id);
+      toast.success("Usuario eliminado correctamente");
+      await fetchUsers();
+      if (selectedUserId === user.id) resetCreateMode();
+    } catch (error: any) {
+      toast.error(error.message || "Error al eliminar usuario");
+    }
   };
 
   const panelTitle =
@@ -299,16 +274,6 @@ export default function UsersPage() {
         : "Completa la información para crear un nuevo usuario.";
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F8FAFC] font-sans text-[#0F172A]">
-      <AppSidebar userRole={profile?.role} />
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <AppHeader
-          title="Usuarios"
-          breadcrumbs="Usuarios / Gestión de usuarios"
-          userProfile={loadingProfile ? null : userForHeader}
-        />
-
         <main className="flex-1 overflow-auto p-5 lg:p-6">
           <div className="grid min-h-full grid-cols-1 gap-5 2xl:grid-cols-[minmax(0,1fr)_370px]">
             <section className="rounded-[18px] border border-[#E5EAF2] bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
@@ -321,11 +286,11 @@ export default function UsersPage() {
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <Button
+                    onClick={fetchUsers}
                     variant="outline"
                     className="h-10 rounded-[8px] border-[#DDE5F0] bg-white px-4 text-[13px] font-semibold text-[#0F172A] hover:bg-[#F8FAFC]"
                   >
-                    <Download data-icon="inline-start" />
-                    Exportar
+                    Actualizar
                   </Button>
                   <Button
                     onClick={resetCreateMode}
@@ -341,6 +306,9 @@ export default function UsersPage() {
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748B]" />
                   <Input
+                    type="search"
+                    name="user-search"
+                    autoComplete="off"
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
                     placeholder="Buscar usuarios por nombre, correo o rol..."
@@ -356,7 +324,7 @@ export default function UsersPage() {
                     <SelectGroup>
                       {roleOptions.map((role) => (
                         <SelectItem key={role} value={role}>
-                          {role}
+                          {role === "admin" ? "Administrador" : role === "revisor" ? "Revisor" : role}
                         </SelectItem>
                       ))}
                     </SelectGroup>
@@ -401,92 +369,111 @@ export default function UsersPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#E5EAF2]">
-                      {filteredUsers.map((user) => (
-                        <tr key={user.id} className="group bg-white text-[13px] transition-colors hover:bg-[#F8FAFC]">
-                          <td className="px-3 py-3">
-                            <div className="flex items-center gap-3">
-                              <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white", user.color)}>
-                                {user.initials}
-                              </div>
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-[#0F172A]">{user.fullName}</span>
-                                  {user.isCurrentUser && (
-                                    <Badge className="h-5 rounded-[5px] bg-[#EEF4FF] px-1.5 text-[11px] font-semibold text-[#2563EB]">
-                                      Tú
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-3 font-medium text-[#334155]">{user.email}</td>
-                          <td className="px-3 py-3">
-                            <RoleBadge role={user.role} />
-                          </td>
-                          <td className="px-3 py-3">
-                            <StatusBadge status={user.status} />
-                          </td>
-                          <td className="px-3 py-3 font-medium text-[#334155]">{user.lastAccess}</td>
-                          <td className="px-3 py-3">
+                      {isLoading ? (
+                        <tr>
+                          <td colSpan={6} className="px-3 py-8 text-center text-[13px] text-[#64748B]">
                             <div className="flex items-center justify-center gap-2">
-                              <Button
-                                size="icon-sm"
-                                variant="outline"
-                                aria-label="Ver detalle"
-                                className="rounded-[8px] border-[#DDE5F0] bg-white text-[#1E3A8A] hover:bg-[#EEF4FF]"
-                                onClick={() => openDetail(user)}
-                              >
-                                <Eye />
-                              </Button>
-                              <Button
-                                size="icon-sm"
-                                variant="outline"
-                                aria-label="Editar"
-                                className="rounded-[8px] border-[#DDE5F0] bg-white text-[#1E3A8A] hover:bg-[#EEF4FF]"
-                                onClick={() => openEdit(user)}
-                              >
-                                <Pencil />
-                              </Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger
-                                  render={
-                                    <Button
-                                      size="icon-sm"
-                                      variant="outline"
-                                      aria-label="Mas opciones"
-                                      className="rounded-[8px] border-[#DDE5F0] bg-white text-[#1E3A8A] hover:bg-[#EEF4FF]"
-                                    />
-                                  }
-                                >
-                                  <MoreVertical />
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-56 border-[#E5EAF2] bg-white">
-                                  <DropdownMenuGroup>
-                                    <DropdownMenuItem onClick={() => setUserStatus(user, "Activo")}>
-                                      <UserCheck />
-                                      Activar usuario
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setUserStatus(user, "Inactivo")}>
-                                      <UserX />
-                                      Desactivar usuario
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                      <KeyRound />
-                                      Restablecer contraseña
-                                    </DropdownMenuItem>
-                                  </DropdownMenuGroup>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem variant="destructive" onClick={() => deleteUser(user)}>
-                                    <Trash2 />
-                                    Eliminar usuario
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Cargando usuarios...
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ) : paginatedUsers.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-3 py-8 text-center text-[13px] text-[#64748B]">
+                            No se encontraron usuarios.
+                          </td>
+                        </tr>
+                      ) : (
+                        paginatedUsers.map((user) => {
+                          const isCurrentUser = profile?.id === user.id;
+                          return (
+                            <tr key={user.id} className="group bg-white text-[13px] transition-colors hover:bg-[#F8FAFC]">
+                              <td className="px-3 py-3">
+                                <div className="flex items-center gap-3">
+                                  <div className={cn(
+                                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white",
+                                    user.role === "admin" ? "bg-blue-600" : "bg-sky-500"
+                                  )}>
+                                    {getInitials(user.full_name)}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-[#0F172A]">{user.full_name}</span>
+                                      {isCurrentUser && (
+                                        <Badge className="h-5 rounded-[5px] bg-[#EEF4FF] px-1.5 text-[11px] font-semibold text-[#2563EB]">
+                                          Tú
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-3 py-3 font-medium text-[#334155]">{user.email}</td>
+                              <td className="px-3 py-3">
+                                <RoleBadge role={user.role} />
+                              </td>
+                              <td className="px-3 py-3">
+                                <StatusBadge status={user.status || "Activo"} />
+                              </td>
+                              <td className="px-3 py-3 font-medium text-[#334155]">-</td>
+                              <td className="px-3 py-3">
+                                <div className="flex items-center justify-center gap-2">
+                                  <Button
+                                    size="icon-sm"
+                                    variant="outline"
+                                    aria-label="Ver detalle"
+                                    className="rounded-[8px] border-[#DDE5F0] bg-white text-[#1E3A8A] hover:bg-[#EEF4FF]"
+                                    onClick={() => openDetail(user)}
+                                  >
+                                    <Eye />
+                                  </Button>
+                                  <Button
+                                    size="icon-sm"
+                                    variant="outline"
+                                    aria-label="Editar"
+                                    className="rounded-[8px] border-[#DDE5F0] bg-white text-[#1E3A8A] hover:bg-[#EEF4FF]"
+                                    onClick={() => openEdit(user)}
+                                  >
+                                    <Pencil />
+                                  </Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger
+                                      render={
+                                        <Button
+                                          size="icon-sm"
+                                          variant="outline"
+                                          aria-label="Mas opciones"
+                                          className="rounded-[8px] border-[#DDE5F0] bg-white text-[#1E3A8A] hover:bg-[#EEF4FF]"
+                                        />
+                                      }
+                                    >
+                                      <MoreVertical />
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-56 border-[#E5EAF2] bg-white">
+                                      <DropdownMenuGroup>
+                                        <DropdownMenuItem onClick={(e) => { setUserStatus(user, "Activo"); }} disabled={user.status === "Activo"}>
+                                          <UserCheck />
+                                          Activar usuario
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={(e) => { setUserStatus(user, "Inactivo"); }} disabled={user.status === "Inactivo" || isCurrentUser}>
+                                          <UserX />
+                                          Desactivar usuario
+                                        </DropdownMenuItem>
+                                      </DropdownMenuGroup>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem variant="destructive" onClick={(e) => { deleteUser(user); }} disabled={isCurrentUser}>
+                                        <Trash2 />
+                                        Eliminar usuario
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -494,40 +481,58 @@ export default function UsersPage() {
 
               <div className="mt-5 flex flex-col gap-4 border-t border-[#EEF2F7] pt-4 md:flex-row md:items-center md:justify-between">
                 <p className="text-[13px] font-medium text-[#334155]">
-                  Mostrando 1 a {filteredUsers.length} de {users.length + 14} usuarios
+                  Mostrando {totalUsers === 0 ? 0 : startIndex + 1} a {endIndex} de {totalUsers} usuarios
                 </p>
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <Button size="icon-sm" variant="outline" className="rounded-[8px] border-[#DDE5F0] text-[#64748B]">
-                      <X className="rotate-45" />
+                    <Button 
+                      size="icon-sm" 
+                      variant="outline" 
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1 || isLoading}
+                      className="rounded-[8px] border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC] disabled:opacity-50 w-8 h-8 p-0 flex items-center justify-center"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    {[1, 2, 3].map((page) => (
-                      <Button
-                        key={page}
-                        size="icon-sm"
-                        variant={page === 1 ? "default" : "outline"}
-                        className={cn(
-                          "rounded-[8px]",
-                          page === 1
-                            ? "bg-white text-[#2563EB] ring-1 ring-[#2563EB] hover:bg-[#EEF4FF]"
-                            : "border-[#DDE5F0] bg-white text-[#0F172A] hover:bg-[#F8FAFC]"
-                        )}
-                      >
-                        {page}
-                      </Button>
-                    ))}
-                    <Button size="icon-sm" variant="outline" className="rounded-[8px] border-[#DDE5F0] text-[#64748B]">
-                      <Plus className="rotate-45" />
+                    {Array.from({ length: totalPages }).map((_, i) => {
+                      const page = i + 1;
+                      return (
+                        <Button
+                          key={page}
+                          size="icon-sm"
+                          variant={page === currentPage ? "default" : "outline"}
+                          onClick={() => setCurrentPage(page)}
+                          disabled={isLoading}
+                          className={cn(
+                            "rounded-[8px] font-semibold text-[13px] w-8 h-8 p-0 flex items-center justify-center transition-all",
+                            page === currentPage
+                              ? "border-[1.5px] border-[#3B82F6] bg-white text-[#3B82F6] shadow-[0_2px_10px_-3px_rgba(59,130,246,0.2)]"
+                              : "border-[#E2E8F0] bg-white text-[#334155] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
+                          )}
+                        >
+                          {page}
+                        </Button>
+                      );
+                    })}
+                    <Button 
+                      size="icon-sm" 
+                      variant="outline" 
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages || isLoading}
+                      className="rounded-[8px] border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC] disabled:opacity-50 w-8 h-8 p-0 flex items-center justify-center"
+                    >
+                      <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
-                  <Select value="10 por pagina">
-                    <SelectTrigger className="h-9 w-[140px] rounded-[8px] border-[#DDE5F0] bg-white px-3 text-[13px] text-[#0F172A]">
+                  <Select value={pageSize.toString()} onValueChange={(v) => setPageSize(Number(v))} disabled={isLoading}>
+                    <SelectTrigger className="h-9 w-[130px] rounded-[8px] border-[#E2E8F0] bg-white px-3 text-[13px] text-[#0F172A] font-medium">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="border-[#E5EAF2] bg-white">
                       <SelectGroup>
-                        <SelectItem value="10 por pagina">10 por pagina</SelectItem>
-                        <SelectItem value="20 por pagina">20 por pagina</SelectItem>
+                        <SelectItem value="10">10 por página</SelectItem>
+                        <SelectItem value="20">20 por página</SelectItem>
+                        <SelectItem value="50">50 por página</SelectItem>
                       </SelectGroup>
                     </SelectContent>
                   </Select>
@@ -543,7 +548,7 @@ export default function UsersPage() {
                 </div>
                 {panelMode !== "create" && selectedUser && (
                   <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#EEF4FF] text-[13px] font-bold text-[#2563EB]">
-                    {selectedUser.initials}
+                    {getInitials(selectedUser.full_name)}
                   </div>
                 )}
               </div>
@@ -552,6 +557,8 @@ export default function UsersPage() {
                 <label className="flex flex-col gap-2">
                   <span className="text-[12px] font-bold text-[#0F172A]">Nombre completo</span>
                   <Input
+                    name="new-user-fullname"
+                    autoComplete="off"
                     value={form.fullName}
                     readOnly={isReadOnly}
                     onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
@@ -563,8 +570,10 @@ export default function UsersPage() {
                 <label className="flex flex-col gap-2">
                   <span className="text-[12px] font-bold text-[#0F172A]">Correo electrónico</span>
                   <Input
+                    name="new-user-email"
+                    autoComplete="off"
                     value={form.email}
-                    readOnly={isReadOnly}
+                    readOnly={isReadOnly || panelMode === "edit"} // No permitimos cambiar email en modo edit por ahora para simplificar
                     onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
                     placeholder="usuario@docuverifica.com"
                     className="h-10 rounded-[8px] border-[#DDE5F0] bg-white text-[13px] read-only:bg-[#F8FAFC]"
@@ -573,29 +582,28 @@ export default function UsersPage() {
 
                 <label className="flex flex-col gap-2">
                   <span className="text-[12px] font-bold text-[#0F172A]">Rol</span>
-                  <Select value={form.role} onValueChange={(value) => updateRole(value as UserRole)} disabled={isReadOnly}>
+                  <Select value={form.role} onValueChange={(value) => setForm((current) => ({...current, role: value as any}))} disabled={isReadOnly}>
                     <SelectTrigger className="h-10 w-full rounded-[8px] border-[#DDE5F0] bg-white px-3 text-[13px] text-[#0F172A] disabled:bg-[#F8FAFC]">
                       <SelectValue placeholder="Selecciona un rol" />
                     </SelectTrigger>
                     <SelectContent className="border-[#E5EAF2] bg-white">
                       <SelectGroup>
-                        <SelectItem value="Administrador">Administrador</SelectItem>
-                        <SelectItem value="Revisor">Revisor</SelectItem>
+                        <SelectItem value="admin">Administrador</SelectItem>
+                        <SelectItem value="revisor">Revisor</SelectItem>
                       </SelectGroup>
                     </SelectContent>
                   </Select>
-                  <span className="text-[12px] font-medium text-[#334155]">
-                    Roles disponibles: <span className="font-semibold text-[#2563EB]">Administrador, Revisor</span>
-                  </span>
                 </label>
 
                 <label className="flex flex-col gap-2">
-                  <span className="text-[12px] font-bold text-[#0F172A]">Contraseña</span>
+                  <span className="text-[12px] font-bold text-[#0F172A]">{panelMode === "edit" ? "Nueva Contraseña (opcional)" : "Contraseña"}</span>
                   <Input
                     type="password"
+                    name="new-user-password"
+                    autoComplete="new-password"
                     value={form.password}
                     readOnly={isReadOnly}
-                    onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                    onChange={(event) => setForm((current) => ({ ...current, password: event.target.value as any }))}
                     placeholder="********"
                     className="h-10 rounded-[8px] border-[#DDE5F0] bg-white text-[13px] read-only:bg-[#F8FAFC]"
                   />
@@ -605,9 +613,11 @@ export default function UsersPage() {
                   <span className="text-[12px] font-bold text-[#0F172A]">Confirmar contraseña</span>
                   <Input
                     type="password"
+                    name="new-user-password-confirm"
+                    autoComplete="new-password"
                     value={form.confirmPassword}
                     readOnly={isReadOnly}
-                    onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))}
+                    onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value as any }))}
                     placeholder="********"
                     className="h-10 rounded-[8px] border-[#DDE5F0] bg-white text-[13px] read-only:bg-[#F8FAFC]"
                   />
@@ -615,7 +625,7 @@ export default function UsersPage() {
 
                 <label className="flex flex-col gap-2">
                   <span className="text-[12px] font-bold text-[#0F172A]">Estado</span>
-                  <Select value={form.status} onValueChange={(value) => setForm((current) => ({ ...current, status: value as UserStatus }))} disabled={isReadOnly}>
+                  <Select value={form.status} onValueChange={(value) => setForm((current) => ({ ...current, status: value as any }))} disabled={isReadOnly}>
                     <SelectTrigger className="h-10 w-full rounded-[8px] border-[#DDE5F0] bg-white px-3 text-[13px] text-[#0F172A] disabled:bg-[#F8FAFC]">
                       <SelectValue />
                     </SelectTrigger>
@@ -629,34 +639,6 @@ export default function UsersPage() {
                   </Select>
                 </label>
 
-                <div className="pt-1">
-                  <p className="mb-3 text-[12px] font-bold text-[#0F172A]">Permisos principales</p>
-                  <div className="flex flex-col gap-2.5">
-                    {userPermissions.map((permission) => {
-                      const checked = form.permissions.includes(permission);
-                      return (
-                        <label key={permission} className="flex cursor-pointer items-center gap-2 text-[13px] font-medium text-[#334155]">
-                          <span
-                            className={cn(
-                              "flex h-4 w-4 items-center justify-center rounded-[4px] border transition-colors",
-                              checked ? "border-[#2563EB] bg-[#2563EB] text-white" : "border-[#CBD5E1] bg-white"
-                            )}
-                          >
-                            {checked && <Check className="h-3 w-3" />}
-                          </span>
-                          <input
-                            type="checkbox"
-                            className="sr-only"
-                            checked={checked}
-                            disabled={isReadOnly}
-                            onChange={() => togglePermission(permission)}
-                          />
-                          {permissionLabels[permission]}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
               </div>
 
               <div className="mt-6 border-t border-[#EEF2F7] pt-5">
@@ -664,6 +646,7 @@ export default function UsersPage() {
                   <Button
                     variant="outline"
                     onClick={resetCreateMode}
+                    disabled={isSaving}
                     className="h-10 flex-1 rounded-[8px] border-[#DDE5F0] bg-white text-[13px] font-semibold text-[#2563EB] hover:bg-[#EEF4FF]"
                   >
                     Cancelar
@@ -678,8 +661,12 @@ export default function UsersPage() {
                   ) : (
                     <Button
                       onClick={submitForm}
+                      disabled={isSaving}
                       className="h-10 flex-1 rounded-[8px] bg-[#2563EB] text-[13px] font-semibold text-white shadow-[0_8px_18px_rgba(37,99,235,0.18)] hover:bg-[#1D4ED8]"
                     >
+                      {isSaving ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : null}
                       {panelMode === "edit" ? "Guardar cambios" : "Crear usuario"}
                     </Button>
                   )}
@@ -690,14 +677,12 @@ export default function UsersPage() {
                 <div className="flex items-start gap-2">
                   <ShieldCheck className="mt-0.5 h-4 w-4 text-[#2563EB]" />
                   <p className="text-[12px] font-medium leading-5 text-[#64748B]">
-                    Los permisos se asignan según el rol y podrán conectarse al backend de usuarios cuando el módulo esté listo.
+                    Los permisos ahora se gestionan automáticamente en el backend según el rol asigado.
                   </p>
                 </div>
               </div>
             </aside>
           </div>
         </main>
-      </div>
-    </div>
   );
 }

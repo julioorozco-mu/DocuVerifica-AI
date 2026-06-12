@@ -11,6 +11,7 @@ class Profile(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     full_name = Column(String(255), nullable=False)
     role = Column(ENUM("admin", "revisor", name="user_role", create_type=False), nullable=False, default="revisor")
+    status = Column(ENUM("Activo", "Inactivo", "Pendiente", name="user_status", create_type=False), nullable=False, default="Activo")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

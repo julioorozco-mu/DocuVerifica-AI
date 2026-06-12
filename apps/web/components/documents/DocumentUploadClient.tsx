@@ -24,8 +24,7 @@ import {
   X,
 } from "lucide-react";
 
-import AppHeader from "@/components/dashboard/AppHeader";
-import AppSidebar from "@/components/dashboard/AppSidebar";
+import { useSetHeader, useHeader } from "@/context/HeaderContext";
 import {
   filterDocuments,
   formatDocumentDate,
@@ -60,7 +59,9 @@ function getInitials(name?: string | null): string {
 
 export default function DocumentUploadClient() {
   const { push } = useRouter();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const { profile } = useHeader();
+  useSetHeader("Documentos", "Documentos / Carga e historial");
+
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   const [loadingInitialData, setLoadingInitialData] = useState(true);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
@@ -98,11 +99,7 @@ export default function DocumentUploadClient() {
       }
 
       try {
-        const [profileData, documentsData] = await Promise.all([
-          api.get<UserProfile>("/auth/me"),
-          api.get<DocumentInfo[]>("/documents"),
-        ]);
-        setProfile(profileData);
+        const documentsData = await api.get<DocumentInfo[]>("/documents");
         setDocuments(documentsData);
       } catch {
         api.logout();
@@ -114,14 +111,6 @@ export default function DocumentUploadClient() {
 
     fetchInitialData();
   }, [push]);
-
-  const userForHeader = profile
-    ? {
-        name: profile.full_name ?? "Usuario",
-        role: profile.role === "admin" ? "Administrador/a" : "Revisor/a",
-        initials: getInitials(profile.full_name),
-      }
-    : null;
 
   const documentMetrics = useMemo(() => getDocumentMetrics(documents), [documents]);
   const filteredDocuments = useMemo(
@@ -191,17 +180,6 @@ export default function DocumentUploadClient() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F8FAFC] font-sans text-[#0F172A]">
-      <AppSidebar userRole={profile?.role} />
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <AppHeader
-          title="Documentos"
-          breadcrumbs="Documentos / Carga e historial"
-          userProfile={userForHeader}
-          isUserLoading={loadingInitialData}
-        />
-
         <main className="flex-1 overflow-auto p-5 lg:p-8">
           <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 xl:grid-cols-12">
             <div className="flex flex-col gap-6 xl:col-span-8">
@@ -732,7 +710,5 @@ export default function DocumentUploadClient() {
             </div>
           </div>
         </main>
-      </div>
-    </div>
   );
 }

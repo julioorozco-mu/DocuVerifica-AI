@@ -12,11 +12,11 @@ __pycache__/
 out/
 
 # Local environment
-.env
-.env.*
-apps/api/.env
-apps/web/.env*
-!.env.example
+# .env
+# .env.*
+# apps/api/.env
+# apps/web/.env*
+# !.env.example
 
 # Supabase local runtime
 supabase/.temp/

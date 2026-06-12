@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import NavigationLayout from "@/components/NavigationLayout";
+import { useSetHeader } from "@/context/HeaderContext";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { api, DocumentInfo } from "@/lib/api";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 
 export default function DocumentsListClient() {
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
+  useSetHeader("Documentos", "Documentos / Bandeja de Entrada");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,7 +52,7 @@ export default function DocumentsListClient() {
   };
 
   return (
-    <NavigationLayout>
+    <main className="flex-1 overflow-auto p-5 lg:p-6">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -192,6 +193,6 @@ export default function DocumentsListClient() {
           </div>
         </Card>
       </div>
-    </NavigationLayout>
+    </main>
   );
 }
