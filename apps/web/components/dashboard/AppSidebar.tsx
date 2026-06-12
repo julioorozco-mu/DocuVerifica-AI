@@ -96,7 +96,7 @@ export default function AppSidebar({ userRole, isLoading = false }: AppSidebarPr
         <p className="pl-11 text-[12px] text-[#64748B]">
           Modelo: <span className="font-medium text-[#334155]">DV-AI v2.4.1</span>
         </p>
-        <button className="mt-2.5 flex items-center gap-1 pl-11 text-[12px] font-semibold text-[#2563EB] hover:text-[#1D4ED8]">
+        <button type="button" className="mt-2.5 flex items-center gap-1 pl-11 text-[12px] font-semibold text-[#2563EB] hover:text-[#1D4ED8]">
           Ver detalles <ChevronRight className="h-3.5 w-3.5" />
         </button>
       </div>
