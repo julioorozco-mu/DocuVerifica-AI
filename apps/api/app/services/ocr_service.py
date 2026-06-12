@@ -4,10 +4,30 @@ import os
 from uuid import UUID
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
-from app.models import Document
+from app.models import Document, DocumentProcessingRequest
+from app.queue_service import get_queue
+from app.services.ai_review import process_document_ai_review
 from app.services.extraction import extract_text_from_document
 
 logger = logging.getLogger(__name__)
+
+def enqueue_pending_ai_review(db: Session, document: Document) -> None:
+    request = db.query(DocumentProcessingRequest).filter(
+        DocumentProcessingRequest.document_id == document.id,
+        DocumentProcessingRequest.requested_ai == True,
+    ).first()
+    if not request:
+        return
+
+    queue = get_queue("ai_review_queue")
+    queue.enqueue(
+        process_document_ai_review,
+        document.id,
+        request.model_name,
+        request.selected_criterion_ids or [],
+    )
+    document.status = "ai_reviewing"
+
 
 def process_document_ocr(document_id: UUID):
     db: Session = SessionLocal()
@@ -80,6 +100,7 @@ def process_document_ocr(document_id: UUID):
             # Si a pesar del OCR no hay texto, lo marcamos como listo pero con error advertencia?
             logger.warning(f"No text extracted from document {document_id} even after OCR.")
             document.status = "ready_for_review"
+            enqueue_pending_ai_review(db, document)
             db.commit()
             return
             
@@ -102,6 +123,7 @@ def process_document_ocr(document_id: UUID):
         
         # Marcar como listo para revisión
         document.status = "ready_for_review"
+        enqueue_pending_ai_review(db, document)
         
         from app.models import AuditLog
         audit = AuditLog(
