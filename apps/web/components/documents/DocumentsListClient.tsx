@@ -173,11 +173,6 @@ export default function DocumentsListClient() {
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Link href={`/documents/${doc.id}`}>
-                            <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white hover:bg-slate-800/40 rounded-xl cursor-pointer">
-                              Detalle
-                            </Button>
-                          </Link>
-                          <Link href={`/documents/${doc.id}/review`}>
                             <Button size="sm" variant="outline" className="border-indigo-500/30 text-indigo-400 hover:bg-indigo-950/20 hover:text-indigo-300 gap-1.5 rounded-xl cursor-pointer">
                               <Eye className="w-3.5 h-3.5" />
                               Revisar

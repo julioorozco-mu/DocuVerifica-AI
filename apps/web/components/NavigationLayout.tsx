@@ -33,11 +33,6 @@ export default function NavigationLayout({ children }: NavigationLayoutProps) {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -76,7 +71,7 @@ export default function NavigationLayout({ children }: NavigationLayoutProps) {
     );
   }
 
-  const isReviewMode = pathname.endsWith('/review');
+  const isReviewMode = /^\/documents\/[^/]+$/.test(pathname);
 
   const menuItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -149,15 +144,13 @@ export default function NavigationLayout({ children }: NavigationLayoutProps) {
                   <LogOut className="w-4 h-4 mr-2" />
                   Salir
                 </Button>
-                {mounted && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                    className="px-3 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
-                  >
-                    {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                  </Button>
-                )}
+                <Button
+                  variant="ghost"
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className="px-3 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+                >
+                  {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </Button>
               </div>
             </>
           ) : (
@@ -220,15 +213,13 @@ export default function NavigationLayout({ children }: NavigationLayoutProps) {
                 <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{profile?.full_name}</p>
                 <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium capitalize">{profile?.role}</p>
               </div>
-              {mounted && (
-                <Button
-                  variant="ghost"
-                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                  className="px-2 text-slate-500 dark:text-slate-400"
-                >
-                  {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="px-2 text-slate-500 dark:text-slate-400"
+              >
+                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </Button>
             </div>
             <Button
               onClick={handleLogout}

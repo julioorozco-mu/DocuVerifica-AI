@@ -5,7 +5,7 @@ import { useSetHeader } from "@/context/HeaderContext";
 import { AIReviewChecklist } from "@/components/documents/AIReviewChecklist";
 import dynamic from "next/dynamic";
 const PDFViewer = dynamic(() => import("@/components/PDFViewer"), { ssr: false });
-import { api, DocumentInfo, DocumentChunk, ExtractionResult, HumanVerdict, getErrorMessage } from "@/lib/api";
+import { api, DocumentInfo, DocumentChunk, ExtractionResult, HumanVerdict, getErrorMessage, AIReviewResult } from "@/lib/api";
 import { 
   CheckCircle, 
   XCircle, 
@@ -55,6 +55,9 @@ export default function DocumentWorkspacePage({ params }: WorkspaceProps) {
   const [extractionResult, setExtractionResult] = useState<ExtractionResult | null>(null);
   const [chunksLoading, setChunksLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [highlightText, setHighlightText] = useState<string>("");
+  const [highlightStatus, setHighlightStatus] = useState<string>("default");
+  const [allEvidences, setAllEvidences] = useState<AIReviewResult[]>([]);
   const [fileState, setFileState] = useState<FileState | null>(null);
   const isPdfDocument = document?.filename.toLowerCase().endsWith(".pdf") ?? false;
   
@@ -289,12 +292,6 @@ export default function DocumentWorkspacePage({ params }: WorkspaceProps) {
               </div>
             </div>
           </div>
-          <Link href={`/documents/${docId}/review`}>
-            <Button className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg hover:shadow-indigo-500/10 cursor-pointer gap-2">
-              <BrainCircuit className="w-4 h-4" />
-              Workspace de 3 Columnas
-            </Button>
-          </Link>
         </div>
 
         {/* Layout Profesional Workspace (2 Paneles) */}
@@ -315,6 +312,13 @@ export default function DocumentWorkspacePage({ params }: WorkspaceProps) {
                 fileData={fileData} 
                 currentPage={currentPage}
                 onPageChange={setCurrentPage}
+                highlightText={highlightText}
+                highlightStatus={highlightStatus}
+                allEvidences={allEvidences}
+                onClearHighlight={() => {
+                  setHighlightText("");
+                  setHighlightStatus("default");
+                }}
               />
             ) : fileError ? (
               <div className="flex flex-col items-center justify-center h-full text-slate-400 px-6 text-center">
@@ -593,9 +597,17 @@ export default function DocumentWorkspacePage({ params }: WorkspaceProps) {
 
                     <AIReviewChecklist 
                       documentId={docId} 
-                      onEvidenceClick={(pageNumber) => {
+                      onResultsLoaded={setAllEvidences}
+                      onEvidenceClick={(pageNumber, text, status) => {
                         if (pageNumber && isPdfDocument) {
                           setCurrentPage(pageNumber);
+                        }
+                        if (text && text.trim().length > 5 && isPdfDocument) {
+                          setHighlightText(text.trim());
+                          setHighlightStatus(status || "default");
+                        } else {
+                          setHighlightText("");
+                          setHighlightStatus("default");
                         }
                       }} 
                     />

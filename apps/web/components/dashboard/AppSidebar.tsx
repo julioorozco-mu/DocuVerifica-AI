@@ -7,14 +7,13 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard, FileText, Search, ListChecks,
+  LayoutDashboard, FileText, ListChecks,
   BarChart2, Users, Settings, ShieldCheck, ChevronRight
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/dashboard",          label: "Dashboard",   icon: LayoutDashboard },
   { href: "/documents",          label: "Documentos",  icon: FileText        },
-  { href: "/documents/review",   label: "Revisión",    icon: Search          },
   { href: "/criteria",           label: "Criterios",   icon: ListChecks      },
   { href: "/reports",            label: "Reportes",    icon: BarChart2       },
   { href: "/admin/users",        label: "Usuarios",    icon: Users           },

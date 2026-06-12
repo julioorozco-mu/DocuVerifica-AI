@@ -501,16 +501,6 @@ export default function DocumentUploadClient() {
                                     <Button
                                       type="button"
                                       size="sm"
-                                      variant="ghost"
-                                      className="h-8 rounded-[7px] px-2 text-[12px] font-semibold text-[#334155] hover:bg-[#EEF4FF] hover:text-[#2563EB]"
-                                    >
-                                      Detalle
-                                    </Button>
-                                  </Link>
-                                  <Link href={`/documents/${document.id}/review`}>
-                                    <Button
-                                      type="button"
-                                      size="sm"
                                       variant="outline"
                                       className="h-8 rounded-[7px] border-[#BFDBFE] px-2 text-[12px] font-semibold text-[#2563EB] hover:bg-[#EFF6FF]"
                                     >

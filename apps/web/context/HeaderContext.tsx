@@ -30,9 +30,6 @@ export function HeaderProvider({ children }: { children: ReactNode }) {
   } else if (pathname.includes("/criteria")) {
     defaultTitle = "Criterios de Revisión";
     defaultBreadcrumbs = "Criterios / Gestión";
-  } else if (pathname.includes("/documents/") && pathname.includes("/review")) {
-    defaultTitle = "Revisión de Documento";
-    defaultBreadcrumbs = "Documentos / Revisión IA";
   } else if (pathname.includes("/documents/") && !pathname.endsWith("/documents")) {
     defaultTitle = "Revisión de Documento";
     defaultBreadcrumbs = "Documentos / Workspace de Revisión";
