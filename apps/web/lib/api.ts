@@ -126,10 +126,13 @@ export interface DashboardMetrics {
   };
   recent_activity: {
     id: string;
+    folio?: string | null;
     filename: string;
     status: string;
     updated_at: string | null;
+    created_at?: string | null;
     reviewer?: string | null;
+    reviewer_initials?: string | null;
     ai_status?: string | null;
     human_status?: string | null;
     document_type?: string | null;
@@ -196,7 +199,7 @@ export const api = {
       let errData;
       try {
         errData = await res.json();
-      } catch (e) {
+      } catch {
         throw new Error(`Error del servidor (HTTP ${res.status}): Posible tiempo de espera agotado al conectar con la IA.`);
       }
       throw new Error(parseDetail(errData.detail) || `Error HTTP ${res.status}`);

@@ -8,8 +8,20 @@ import { reviewerProductivity } from "@/lib/mock-dashboard-data";
 
 // TODO: Reemplazar reviewerProductivity por prop al conectar con API real.
 
-export default function ReviewerProductivityCard() {
-  const reviewers = reviewerProductivity;
+export interface ReviewerProductivityItem {
+  rank: number;
+  name: string;
+  reviews: number;
+  max: number;
+}
+
+interface ReviewerProductivityCardProps {
+  reviewers?: ReviewerProductivityItem[];
+}
+
+export default function ReviewerProductivityCard({
+  reviewers = reviewerProductivity,
+}: ReviewerProductivityCardProps) {
 
   return (
     <div className="h-[216px] overflow-hidden rounded-[14px] border border-[#E5EAF2] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]">

@@ -21,11 +21,29 @@ const TYPE_STYLE: Record<string, { icon: string; bg: string }> = {
 
 // TODO: Reemplazar recentActivity por prop al conectar con API real.
 
-interface RecentActivityCardProps {
-  activities?: typeof recentActivity;
+export interface RecentActivityItem {
+  id: string;
+  message: string;
+  actor: string;
+  time: string;
+  type: "success" | "warning" | "info";
+  icon: "check" | "alert" | "file";
 }
 
-export default function RecentActivityCard({ activities = recentActivity }: RecentActivityCardProps) {
+interface RecentActivityCardProps {
+  activities?: RecentActivityItem[];
+}
+
+const DEFAULT_RECENT_ACTIVITY: RecentActivityItem[] = recentActivity.map((item) => ({
+  id: item.id,
+  message: item.message,
+  actor: item.actor,
+  time: item.time,
+  type: item.type as RecentActivityItem["type"],
+  icon: item.icon as RecentActivityItem["icon"],
+}));
+
+export default function RecentActivityCard({ activities = DEFAULT_RECENT_ACTIVITY }: RecentActivityCardProps) {
 
   return (
     <div className="h-[150px] overflow-hidden rounded-[14px] border border-[#E5EAF2] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]">

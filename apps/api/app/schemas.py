@@ -192,10 +192,13 @@ class DashboardCategory(BaseModel):
 
 class RecentActivityItem(BaseModel):
     id: str
+    folio: Optional[str] = None
     filename: str
     status: str
     updated_at: Optional[str] = None
+    created_at: Optional[str] = None
     reviewer: Optional[str] = None
+    reviewer_initials: Optional[str] = None
     ai_status: Optional[str] = None
     human_status: Optional[str] = None
     document_type: Optional[str] = None
