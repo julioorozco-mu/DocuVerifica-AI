@@ -24,6 +24,7 @@ supabase/.branches/
 
 # Generated validation artifacts
 final_runs/
+.superpowers/
 
 # Local document storage
 storage/documents/*
