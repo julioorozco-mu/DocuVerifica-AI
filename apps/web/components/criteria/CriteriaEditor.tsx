@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, Trash2, Loader2, Pencil, PlusCircle } from "lucide-react";
+import type { CriterionScope } from "@/lib/api";
 
 interface CriteriaEditorProps {
   isCreating: boolean;
@@ -17,6 +18,8 @@ interface CriteriaEditorProps {
   formRulePattern: string;
   formProjectType: string;
   formIsActive: boolean;
+  formScope: CriterionScope;
+  canManageGlobalCriteria: boolean;
   saving: boolean;
   message: { text: string; type: "success" | "error" } | null;
   onNameChange: (v: string) => void;
@@ -25,6 +28,7 @@ interface CriteriaEditorProps {
   onRulePatternChange: (v: string) => void;
   onProjectTypeChange: (v: string) => void;
   onIsActiveChange: (v: boolean) => void;
+  onScopeChange: (v: CriterionScope) => void;
   onSave: () => void;
   onDelete?: () => void;
 }
@@ -37,6 +41,8 @@ export function CriteriaEditor({
   formRulePattern,
   formProjectType,
   formIsActive,
+  formScope,
+  canManageGlobalCriteria,
   saving,
   message,
   onNameChange,
@@ -45,6 +51,7 @@ export function CriteriaEditor({
   onRulePatternChange,
   onProjectTypeChange,
   onIsActiveChange,
+  onScopeChange,
   onSave,
   onDelete,
 }: CriteriaEditorProps) {
@@ -121,8 +128,8 @@ export function CriteriaEditor({
           />
         </div>
 
-        {/* Fila: Tipo de Regla + Tipo de Proyecto */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Fila: Tipo de Regla + Alcance + Tipo de Proyecto */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="rule-type" className="text-slate-300 text-xs font-semibold">
               Tipo de Evaluación
@@ -146,6 +153,28 @@ export function CriteriaEditor({
                 </SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="criterion-scope" className="text-slate-300 text-xs font-semibold">
+              Alcance
+            </Label>
+            <Select value={formScope} onValueChange={(val) => onScopeChange(val as CriterionScope)}>
+              <SelectTrigger id="criterion-scope" className="bg-slate-900/60 border-slate-800 text-slate-100 rounded-xl h-10 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-900 border-slate-800 text-slate-100 text-xs">
+                <SelectItem value="individual" className="focus:bg-slate-800 cursor-pointer">
+                  Individual
+                </SelectItem>
+                <SelectItem value="global" disabled={!canManageGlobalCriteria} className="focus:bg-slate-800 cursor-pointer">
+                  Global
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {!canManageGlobalCriteria && (
+              <p className="text-[10px] text-slate-600">Solo administradores pueden crear plantillas globales.</p>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">

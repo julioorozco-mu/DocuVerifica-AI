@@ -154,6 +154,10 @@ class ReviewCriterion(Base):
 
     reviewer = relationship("Profile")
 
+    @property
+    def scope(self) -> str:
+        return "global" if self.reviewer_id is None else "individual"
+
 
 class AIReviewResult(Base):
     __tablename__ = "ai_review_results"

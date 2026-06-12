@@ -37,7 +37,16 @@ import {
   type DocumentStatusFilter,
 } from "@/components/documents/document-display";
 import { Button } from "@/components/ui/button";
-import { api, DocumentInfo, getErrorMessage, ReviewCriterion, type DocumentPriority } from "@/lib/api";
+import {
+  api,
+  DEFAULT_AI_MODEL,
+  DocumentInfo,
+  FALLBACK_AI_MODELS,
+  getErrorMessage,
+  ReviewCriterion,
+  type AIModelsResponse,
+  type DocumentPriority,
+} from "@/lib/api";
 
 const PRIORITIES: { label: string; value: DocumentPriority }[] = [
   { label: "Baja", value: "baja" },
@@ -66,7 +75,8 @@ export default function DocumentUploadClient() {
   const [priority, setPriority] = useState<DocumentPriority>("media");
   const [extractText, setExtractText] = useState(true);
   const [runAiReview, setRunAiReview] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("qwen3.5:9b");
+  const [modelCatalog, setModelCatalog] = useState<AIModelsResponse>(FALLBACK_AI_MODELS);
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_AI_MODEL);
   const [selectedCriterionIds, setSelectedCriterionIds] = useState<string[]>([]);
   const [queueStatus, setQueueStatus] = useState("Listo para subir");
 
@@ -93,12 +103,15 @@ export default function DocumentUploadClient() {
       }
 
       try {
-        const [documentsData, criteriaData] = await Promise.all([
+        const [documentsData, criteriaData, modelsData] = await Promise.all([
           api.get<DocumentInfo[]>("/documents"),
           api.get<ReviewCriterion[]>("/criteria"),
+          api.get<AIModelsResponse>("/ai/models").catch(() => FALLBACK_AI_MODELS),
         ]);
         setDocuments(documentsData);
         setCriteria(criteriaData);
+        setModelCatalog(modelsData);
+        setSelectedModel(modelsData.default_model || DEFAULT_AI_MODEL);
       } catch {
         api.logout();
         push("/login");
@@ -623,10 +636,16 @@ export default function DocumentUploadClient() {
                             onChange={(event) => setSelectedModel(event.target.value)}
                             className="h-9 w-full rounded-[8px] border border-[#DDE5F0] bg-white px-3 text-[12px] font-semibold text-[#334155]"
                           >
-                            <option value="qwen3.5:9b">Qwen 3.5 9B</option>
-                            <option value="llama3.1:8b">Llama 3.1 8B</option>
-                            <option value="phi4">Phi-4</option>
-                            <option value="deepseek-r1:8b">DeepSeek R1 8B</option>
+                            {modelCatalog.categories.map((category) => (
+                              <optgroup key={category.id} label={category.label}>
+                                {category.models.map((model) => (
+                                  <option key={model.id} value={model.id} disabled={model.disabled}>
+                                    {model.label}
+                                    {model.default ? " (predeterminado)" : ""}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            ))}
                           </select>
                         )}
                       </div>

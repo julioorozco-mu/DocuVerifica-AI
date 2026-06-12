@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from app.database import Base, engine
-from app.routers import auth, documents, ai_router, criteria_router, dashboard, users_router, audit_router
+from app.routers import auth, documents, ai_router, ai_models_router, criteria_router, dashboard, users_router, audit_router
 from app.auth import get_current_user
 from app.models import Profile
 from app.schemas import ProfileResponse
@@ -38,6 +38,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(documents.router)
 app.include_router(ai_router.router)
+app.include_router(ai_models_router.router)
 app.include_router(criteria_router.router)
 app.include_router(dashboard.router)
 app.include_router(users_router.router)

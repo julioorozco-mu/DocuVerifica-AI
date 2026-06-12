@@ -35,6 +35,44 @@ export interface ProcessingRequest {
   criterion_ids?: string[];
 }
 
+export interface AIModelOption {
+  id: string;
+  label: string;
+  description?: string;
+  default?: boolean;
+  disabled?: boolean;
+}
+
+export interface AIModelCategory {
+  id: string;
+  label: string;
+  description?: string;
+  models: AIModelOption[];
+}
+
+export interface AIModelsResponse {
+  default_model: string;
+  categories: AIModelCategory[];
+}
+
+export const DEFAULT_AI_MODEL = "qwen2.5:3b";
+
+export const FALLBACK_AI_MODELS: AIModelsResponse = {
+  default_model: DEFAULT_AI_MODEL,
+  categories: [
+    {
+      id: "recommended",
+      label: "Recomendados",
+      models: [
+        { id: "qwen2.5:3b", label: "Qwen 2.5 3B", default: true },
+        { id: "qwen3.5:9b", label: "Qwen 3.5 9B" },
+        { id: "llama3.1:8b", label: "Llama 3.1 8B" },
+        { id: "phi4", label: "Phi-4" },
+      ],
+    },
+  ],
+};
+
 export interface DocumentInfo {
   id: string;
   filename: string;
@@ -101,6 +139,8 @@ export interface AIReviewResult {
   created_at: string;
 }
 
+export type CriterionScope = "global" | "individual";
+
 export interface ReviewCriterion {
   id: string;
   name: string;
@@ -109,6 +149,7 @@ export interface ReviewCriterion {
   rule_pattern?: string;
   is_active: boolean;
   project_type?: string;
+  scope: CriterionScope;
   reviewer_id?: string;
   created_at: string;
   updated_at: string;

@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
-import { useSetHeader } from "@/context/HeaderContext";
+import React, { useEffect, useState } from "react";
+import { useHeader, useSetHeader } from "@/context/HeaderContext";
 import { CriteriaList } from "@/components/criteria/CriteriaList";
 import { CriteriaEditor } from "@/components/criteria/CriteriaEditor";
 import { AISimulator } from "@/components/criteria/AISimulator";
-import { api, ReviewCriterion, getErrorMessage } from "@/lib/api";
+import { api, ReviewCriterion, getErrorMessage, type CriterionScope } from "@/lib/api";
 import { ListChecks, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 export default function CriteriaPage() {
   const [criteria, setCriteria] = useState<ReviewCriterion[]>([]);
   useSetHeader("Criterios de Revisión", "Criterios / Gestión");
+  const { profile } = useHeader();
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -25,9 +26,11 @@ export default function CriteriaPage() {
   const [formRulePattern, setFormRulePattern] = useState("");
   const [formProjectType, setFormProjectType] = useState("");
   const [formIsActive, setFormIsActive] = useState(true);
+  const [formScope, setFormScope] = useState<CriterionScope>("individual");
   const [saving, setSaving] = useState(false);
+  const canManageGlobalCriteria = profile?.role === "admin";
 
-  const loadCriteria = useCallback(async () => {
+  const loadCriteria = async () => {
     try {
       const data = await api.get<ReviewCriterion[]>("/criteria");
       setCriteria(data);
@@ -36,11 +39,31 @@ export default function CriteriaPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    loadCriteria();
-  }, [loadCriteria]);
+    let active = true;
+
+    const fetchCriteria = async () => {
+      try {
+        const data = await api.get<ReviewCriterion[]>("/criteria");
+        if (active) {
+          setCriteria(data);
+        }
+      } catch (err) {
+        console.error("Error al cargar criterios:", err);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchCriteria();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Seleccionar un criterio existente para editar
   const handleSelect = (criterion: ReviewCriterion) => {
@@ -52,6 +75,7 @@ export default function CriteriaPage() {
     setFormRulePattern(criterion.rule_pattern || "");
     setFormProjectType(criterion.project_type || "");
     setFormIsActive(criterion.is_active);
+    setFormScope(criterion.scope || (criterion.reviewer_id ? "individual" : "global"));
     setMessage(null);
   };
 
@@ -65,6 +89,7 @@ export default function CriteriaPage() {
     setFormRulePattern("");
     setFormProjectType("");
     setFormIsActive(true);
+    setFormScope("individual");
     setMessage(null);
   };
 
@@ -85,6 +110,7 @@ export default function CriteriaPage() {
       rule_pattern: formRulePattern.trim() || null,
       project_type: formProjectType.trim() || null,
       is_active: formIsActive,
+      scope: formScope,
     };
 
     try {
@@ -115,6 +141,7 @@ export default function CriteriaPage() {
       setIsCreating(false);
       setFormName("");
       setFormDescription("");
+      setFormScope("individual");
       setMessage({ text: "Criterio eliminado.", type: "success" });
       await loadCriteria();
     } catch (err) {
@@ -194,6 +221,8 @@ export default function CriteriaPage() {
                   formRulePattern={formRulePattern}
                   formProjectType={formProjectType}
                   formIsActive={formIsActive}
+                  formScope={formScope}
+                  canManageGlobalCriteria={canManageGlobalCriteria}
                   saving={saving}
                   message={message}
                   onNameChange={setFormName}
@@ -202,6 +231,7 @@ export default function CriteriaPage() {
                   onRulePatternChange={setFormRulePattern}
                   onProjectTypeChange={setFormProjectType}
                   onIsActiveChange={setFormIsActive}
+                  onScopeChange={setFormScope}
                   onSave={handleSave}
                   onDelete={selectedId ? handleDelete : undefined}
                 />

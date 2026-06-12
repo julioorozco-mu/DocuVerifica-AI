@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from uuid import UUID
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Literal
 
 # --- Autenticación y Tokens ---
 class Token(BaseModel):
@@ -128,6 +128,7 @@ class ReviewCriterionBase(BaseModel):
     rule_pattern: Optional[str] = None
     is_active: bool = True
     project_type: Optional[str] = None
+    scope: Literal["global", "individual"] = "individual"
 
 class ReviewCriterionCreate(ReviewCriterionBase):
     pass
@@ -139,6 +140,7 @@ class ReviewCriterionUpdate(BaseModel):
     rule_pattern: Optional[str] = None
     is_active: Optional[bool] = None
     project_type: Optional[str] = None
+    scope: Optional[Literal["global", "individual"]] = None
 
 class ReviewCriterionResponse(ReviewCriterionBase):
     id: UUID

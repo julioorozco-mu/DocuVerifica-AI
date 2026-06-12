@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from app.database import get_db
 from app.auth import get_current_user
-from app.models import Profile, ReviewCriterion
+from app.models import Profile, ReviewCriterion, AuditLog
 from app.schemas import (
     ReviewCriterionCreate,
     ReviewCriterionUpdate,
@@ -17,6 +17,21 @@ from app.schemas import (
 from app.services.ai_review import simulate_criterion
 
 router = APIRouter(prefix="/criteria", tags=["Criterios de Revisión"])
+
+
+def resolve_reviewer_id_for_scope(scope: str, current_user: Profile):
+    if scope == "global":
+        if current_user.role != "admin":
+            raise HTTPException(status_code=403, detail="Solo un administrador puede crear criterios globales.")
+        return None
+    return current_user.id
+
+
+def ensure_can_manage_criterion(criterion: ReviewCriterion, current_user: Profile) -> None:
+    if criterion.reviewer_id is None and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Solo un administrador puede modificar criterios globales.")
+    if criterion.reviewer_id and criterion.reviewer_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="No tienes permiso para editar este criterio.")
 
 
 @router.get("", response_model=List[ReviewCriterionResponse])
@@ -56,10 +71,10 @@ def create_criterion(
 ):
     """
     Crea un nuevo criterio.
-    - Si el usuario es 'admin', el criterio se crea como global (reviewer_id=None).
-    - Si el usuario es 'revisor', el criterio es personal (reviewer_id=current_user.id).
+    - scope='global' crea una plantilla global solo para admin.
+    - scope='individual' crea una plantilla personal del usuario actual.
     """
-    reviewer_id = None if current_user.role == "admin" else current_user.id
+    reviewer_id = resolve_reviewer_id_for_scope(body.scope, current_user)
 
     criterion = ReviewCriterion(
         name=body.name,
@@ -95,11 +110,12 @@ def update_criterion(
     if not criterion:
         raise HTTPException(status_code=404, detail="Criterio no encontrado.")
 
-    # Solo el dueño o un admin puede editar
-    if criterion.reviewer_id and criterion.reviewer_id != current_user.id and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="No tienes permiso para editar este criterio.")
+    ensure_can_manage_criterion(criterion, current_user)
 
     update_data = body.model_dump(exclude_unset=True)
+    if "scope" in update_data:
+        criterion.reviewer_id = resolve_reviewer_id_for_scope(update_data.pop("scope"), current_user)
+
     for field, value in update_data.items():
         setattr(criterion, field, value)
 
@@ -125,9 +141,7 @@ def delete_criterion(
     if not criterion:
         raise HTTPException(status_code=404, detail="Criterio no encontrado.")
 
-    # Solo el dueño o un admin puede eliminar
-    if criterion.reviewer_id and criterion.reviewer_id != current_user.id and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="No tienes permiso para eliminar este criterio.")
+    ensure_can_manage_criterion(criterion, current_user)
 
     db.delete(criterion)
     db.commit()

@@ -5,7 +5,18 @@ import { useSetHeader } from "@/context/HeaderContext";
 import { AIReviewChecklist } from "@/components/documents/AIReviewChecklist";
 import dynamic from "next/dynamic";
 const PDFViewer = dynamic(() => import("@/components/PDFViewer"), { ssr: false });
-import { api, DocumentInfo, DocumentChunk, ExtractionResult, HumanVerdict, getErrorMessage, AIReviewResult } from "@/lib/api";
+import {
+  api,
+  AIReviewResult,
+  DEFAULT_AI_MODEL,
+  DocumentInfo,
+  DocumentChunk,
+  ExtractionResult,
+  FALLBACK_AI_MODELS,
+  HumanVerdict,
+  getErrorMessage,
+  type AIModelsResponse,
+} from "@/lib/api";
 import { 
   CheckCircle, 
   XCircle, 
@@ -61,7 +72,8 @@ export default function DocumentWorkspacePage({ params }: WorkspaceProps) {
   const [fileState, setFileState] = useState<FileState | null>(null);
   const isPdfDocument = document?.filename.toLowerCase().endsWith(".pdf") ?? false;
   
-  const [selectedModel, setSelectedModel] = useState<string>("qwen3.5:9b");
+  const [modelCatalog, setModelCatalog] = useState<AIModelsResponse>(FALLBACK_AI_MODELS);
+  const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_AI_MODEL);
   const [aiReviewTriggering, setAiReviewTriggering] = useState(false);
 
   // Desenvolver los params dinámicos
@@ -90,8 +102,13 @@ export default function DocumentWorkspacePage({ params }: WorkspaceProps) {
     const loadData = async () => {
       setLoading(true);
       try {
-        const docData = await api.get<DocumentInfo>(`/documents/${docId}`);
+        const [docData, modelsData] = await Promise.all([
+          api.get<DocumentInfo>(`/documents/${docId}`),
+          api.get<AIModelsResponse>("/ai/models").catch(() => FALLBACK_AI_MODELS),
+        ]);
         setDocument(docData);
+        setModelCatalog(modelsData);
+        setSelectedModel(modelsData.default_model || DEFAULT_AI_MODEL);
 
         // Intentar obtener dictamen previo
         try {
@@ -545,51 +562,27 @@ export default function DocumentWorkspacePage({ params }: WorkspaceProps) {
                             <SelectValue placeholder="Selecciona el modelo" />
                           </SelectTrigger>
                           <SelectContent className="bg-slate-900 border-slate-800 text-slate-100 text-xs">
-                            <SelectGroup>
-                              <SelectLabel className="text-indigo-400 font-semibold px-2 py-1.5 text-xs">Recomendados (Equilibrio rápido/preciso)</SelectLabel>
-                              <SelectItem value="qwen3.5:9b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
-                                Qwen 3.5 9B (Predeterminado - Recomendado)
-                              </SelectItem>
-                              <SelectItem value="llama3.1:8b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
-                                Llama 3.1 8B
-                              </SelectItem>
-                              <SelectItem value="phi4" className="focus:bg-slate-800 py-1.5 cursor-pointer">
-                                Phi-4
-                              </SelectItem>
-                            </SelectGroup>
-                            
-                            <SelectSeparator className="bg-slate-800" />
-                            
-                            <SelectGroup>
-                              <SelectLabel className="text-emerald-400 font-semibold px-2 py-1.5 text-xs">Rápidos (Menor VRAM, mayor velocidad)</SelectLabel>
-                              <SelectItem value="qwen2.5:3b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
-                                Qwen 2.5 3B
-                              </SelectItem>
-                              <SelectItem value="llama3.2:1b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
-                                Llama 3.2 1B
-                              </SelectItem>
-                            </SelectGroup>
-
-                            <SelectSeparator className="bg-slate-800" />
-                            
-                            <SelectGroup>
-                              <SelectLabel className="text-orange-400 font-semibold px-2 py-1.5 text-xs">Razonamiento Max (Pensamiento profundo)</SelectLabel>
-                              <SelectItem value="deepseek-r1:8b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
-                                DeepSeek R1 8B
-                              </SelectItem>
-                              <SelectItem value="deepseek-r1:1.5b" className="focus:bg-slate-800 py-1.5 cursor-pointer">
-                                DeepSeek R1 1.5B
-                              </SelectItem>
-                            </SelectGroup>
-
-                            <SelectSeparator className="bg-slate-800" />
-                            
-                            <SelectGroup>
-                              <SelectLabel className="text-slate-400 font-semibold px-2 py-1.5 text-xs">Embeddings</SelectLabel>
-                              <SelectItem value="nomic-embed-text-v2-moe" className="focus:bg-slate-800 py-1.5 cursor-pointer" disabled>
-                                Nomic Embed Text v2 (Solo base de datos)
-                              </SelectItem>
-                            </SelectGroup>
+                            {modelCatalog.categories.map((category, index) => (
+                              <React.Fragment key={category.id}>
+                                {index > 0 && <SelectSeparator className="bg-slate-800" />}
+                                <SelectGroup>
+                                  <SelectLabel className="text-indigo-400 font-semibold px-2 py-1.5 text-xs">
+                                    {category.label}
+                                  </SelectLabel>
+                                  {category.models.map((model) => (
+                                    <SelectItem
+                                      key={model.id}
+                                      value={model.id}
+                                      disabled={model.disabled}
+                                      className="focus:bg-slate-800 py-1.5 cursor-pointer"
+                                    >
+                                      {model.label}
+                                      {model.default ? " (predeterminado)" : ""}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </React.Fragment>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
