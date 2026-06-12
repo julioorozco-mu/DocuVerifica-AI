@@ -438,7 +438,7 @@ export default function DocumentUploadClient() {
                       {loadingInitialData || loadingDocuments ? (
                         <tr>
                           <td colSpan={6} className="py-8 text-center text-[13px] font-medium text-[#64748B]">
-                            Cargando historial de documentos...
+                            Cargando historial de documentos…
                           </td>
                         </tr>
                       ) : filteredDocuments.length === 0 ? (
@@ -665,7 +665,7 @@ export default function DocumentUploadClient() {
                         >
                           {uploading ? (
                             <>
-                              <Loader2 className="mr-2 size-4 animate-spin" /> Cargando...
+                              <Loader2 className="mr-2 size-4 animate-spin" /> Cargando…
                             </>
                           ) : (
                             <>
