@@ -1,6 +1,8 @@
 import asyncio
+from typing import Iterable
 from uuid import UUID
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from app.database import SessionLocal
 from app.models import Document, DocumentChunk, ReviewCriterion, AIReviewResult
 from app.services.ollama_client import generate_structured_output, OllamaError
@@ -8,6 +10,18 @@ from app.schemas import AIReviewOutput
 import logging
 
 logger = logging.getLogger(__name__)
+
+def resolve_review_criteria(db: Session, reviewer_id: UUID, selected_criterion_ids: Iterable = ()):
+    selected_ids = {str(item) for item in (selected_criterion_ids or [])}
+    return db.query(ReviewCriterion).filter(
+        ReviewCriterion.is_active == True,
+        ReviewCriterion.rule_type.in_(["ai", "rule_then_ai"]),
+        or_(
+            ReviewCriterion.reviewer_id == None,
+            (ReviewCriterion.reviewer_id == reviewer_id) & (ReviewCriterion.id.in_(selected_ids)),
+        ),
+    ).all()
+
 
 def get_document_context(db: Session, document_id: UUID) -> str:
     """Extrae todo el texto de los chunks del documento."""
@@ -112,7 +126,7 @@ async def simulate_criterion(criterion_name: str, criterion_description: str, ru
     prompt = build_criterion_prompt(criterion_name, criterion_description, text_fragment)
     return await generate_structured_output(prompt, AIReviewOutput, model_name)
 
-async def async_process_document_ai_review(document_id: UUID, model_name: str = None):
+async def async_process_document_ai_review(document_id: UUID, model_name: str = None, criterion_ids: list[str] | None = None):
     db = SessionLocal()
     try:
         document = db.query(Document).filter(Document.id == document_id).first()
@@ -131,10 +145,7 @@ async def async_process_document_ai_review(document_id: UUID, model_name: str = 
         db.query(AIReviewResult).filter(AIReviewResult.document_id == document_id).delete()
         db.commit()
 
-        criteria = db.query(ReviewCriterion).filter(
-            ReviewCriterion.is_active == True, 
-            ReviewCriterion.rule_type.in_(["ai", "rule_then_ai"])
-        ).all()
+        criteria = resolve_review_criteria(db, document.user_id, criterion_ids or [])
         
         if not criteria:
             logger.info(f"No AI criteria found for document {document_id}.")
@@ -196,6 +207,6 @@ async def async_process_document_ai_review(document_id: UUID, model_name: str = 
     finally:
         db.close()
 
-def process_document_ai_review(document_id: UUID, model_name: str = None):
+def process_document_ai_review(document_id: UUID, model_name: str = None, criterion_ids: list[str] | None = None):
     """Punto de entrada síncrono para el worker de RQ."""
-    asyncio.run(async_process_document_ai_review(document_id, model_name))
+    asyncio.run(async_process_document_ai_review(document_id, model_name, criterion_ids))

@@ -3,7 +3,7 @@ import uuid
 import shutil
 import logging
 import base64
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List
@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/documents", tags=["Documentos"])
 
 ALLOWED_DOCUMENT_EXTENSIONS = {".pdf", ".docx"}
+ALLOWED_PRIORITIES = {"baja", "media", "alta"}
 
 
 def _safe_filename(filename: str) -> str:
@@ -45,6 +46,7 @@ def _document_media_type(filename: str) -> str:
 @router.post("/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
     file: UploadFile = File(...),
+    priority: str = Form("media"),
     db: Session = Depends(get_db),
     current_user: Profile = Depends(get_current_user)
 ):
@@ -53,6 +55,13 @@ async def upload_document(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Solo se admiten documentos en formato PDF o DOCX."
+        )
+
+    normalized_priority = priority.lower().strip()
+    if normalized_priority not in ALLOWED_PRIORITIES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La prioridad debe ser baja, media o alta."
         )
 
     # Crear identificador único y nombres de archivo
@@ -80,6 +89,7 @@ async def upload_document(
         file_path=file_path,
         size_bytes=file_size,
         status="uploaded",
+        priority=normalized_priority,
         user_id=current_user.id
     )
     
@@ -89,7 +99,8 @@ async def upload_document(
     audit_detail = {
         "filename": file.filename,
         "size_bytes": file_size,
-        "uploader_email": current_user.email
+        "uploader_email": current_user.email,
+        "priority": normalized_priority,
     }
     audit = AuditLog(
         action="document_uploaded",
