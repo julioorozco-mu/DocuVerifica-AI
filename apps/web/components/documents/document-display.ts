@@ -90,6 +90,18 @@ export function getStatusBadgeClass(tone: DocumentStatusTone): string {
   return classes[tone];
 }
 
+export function getPriorityDisplay(priority?: string) {
+  switch (priority) {
+    case "alta":
+      return { label: "Alta", className: "border-red-200 bg-red-50 text-red-700" };
+    case "baja":
+      return { label: "Baja", className: "border-emerald-200 bg-emerald-50 text-emerald-700" };
+    case "media":
+    default:
+      return { label: "Media", className: "border-orange-200 bg-orange-50 text-orange-700" };
+  }
+}
+
 export function getDocumentMetrics(documents: DocumentInfo[]): DocumentMetric[] {
   const uploaded = documents.filter((document) => document.status === "uploaded").length;
   const ready = documents.filter((document) => document.status === "ready_for_review").length;

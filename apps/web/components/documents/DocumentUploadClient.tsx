@@ -21,7 +21,6 @@ import {
   ShieldAlert,
   Table2,
   Trash2,
-  X,
 } from "lucide-react";
 
 import { useSetHeader, useHeader } from "@/context/HeaderContext";
@@ -32,30 +31,19 @@ import {
   getDocumentMetrics,
   getDocumentStatusDisplay,
   getFileExtension,
+  getPriorityDisplay,
   getStatusBadgeClass,
   STATUS_FILTER_OPTIONS,
   type DocumentStatusFilter,
 } from "@/components/documents/document-display";
 import { Button } from "@/components/ui/button";
-import { api, DocumentInfo, getErrorMessage, UserProfile } from "@/lib/api";
+import { api, DocumentInfo, getErrorMessage, ReviewCriterion, type DocumentPriority } from "@/lib/api";
 
-const PRIORITIES = ["Baja", "Media", "Alta"] as const;
-const FUTURE_CRITERIA = [
-  "Nombre completo",
-  "Fecha vigente",
-  "Firma del responsable",
-  "Folio institucional",
-  "Anexos obligatorios",
+const PRIORITIES: { label: string; value: DocumentPriority }[] = [
+  { label: "Baja", value: "baja" },
+  { label: "Media", value: "media" },
+  { label: "Alta", value: "alta" },
 ];
-
-function getInitials(name?: string | null): string {
-  return (name ?? "US")
-    .split(" ")
-    .map((word) => word[0])
-    .join("")
-    .substring(0, 2)
-    .toUpperCase();
-}
 
 export default function DocumentUploadClient() {
   const { push } = useRouter();
@@ -63,6 +51,7 @@ export default function DocumentUploadClient() {
   useSetHeader("Documentos", "Documentos / Carga e historial");
 
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
+  const [criteria, setCriteria] = useState<ReviewCriterion[]>([]);
   const [loadingInitialData, setLoadingInitialData] = useState(true);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [documentsError, setDocumentsError] = useState<string | null>(null);
@@ -74,7 +63,12 @@ export default function DocumentUploadClient() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [priority, setPriority] = useState<(typeof PRIORITIES)[number]>("Media");
+  const [priority, setPriority] = useState<DocumentPriority>("media");
+  const [extractText, setExtractText] = useState(true);
+  const [runAiReview, setRunAiReview] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("qwen3.5:9b");
+  const [selectedCriterionIds, setSelectedCriterionIds] = useState<string[]>([]);
+  const [queueStatus, setQueueStatus] = useState("Listo para subir");
 
   const loadDocuments = async () => {
     setLoadingDocuments(true);
@@ -99,8 +93,12 @@ export default function DocumentUploadClient() {
       }
 
       try {
-        const documentsData = await api.get<DocumentInfo[]>("/documents");
+        const [documentsData, criteriaData] = await Promise.all([
+          api.get<DocumentInfo[]>("/documents"),
+          api.get<ReviewCriterion[]>("/criteria"),
+        ]);
         setDocuments(documentsData);
+        setCriteria(criteriaData);
       } catch {
         api.logout();
         push("/login");
@@ -121,6 +119,14 @@ export default function DocumentUploadClient() {
     () => documents.filter((document) => document.status === "ready_for_review").length,
     [documents]
   );
+  const activeGlobalCriteria = useMemo(
+    () => criteria.filter((criterion) => criterion.is_active && !criterion.reviewer_id),
+    [criteria]
+  );
+  const activeIndividualCriteria = useMemo(
+    () => criteria.filter((criterion) => criterion.is_active && criterion.reviewer_id === profile?.id),
+    [criteria, profile?.id]
+  );
 
   const handleDrag = (event: React.DragEvent) => {
     event.preventDefault();
@@ -140,6 +146,7 @@ export default function DocumentUploadClient() {
       setError("Solo se permiten archivos en formato PDF o DOCX.");
       return;
     }
+    setQueueStatus("Listo para subir");
     setFile(selectedFile);
   };
 
@@ -167,13 +174,36 @@ export default function DocumentUploadClient() {
     setSuccess(false);
 
     try {
-      await api.uploadFile(file);
+      setQueueStatus("Subiendo archivo");
+      const uploadedDocument = await api.uploadFile(file, priority);
+
+      if (extractText || runAiReview) {
+        setQueueStatus("Extrayendo texto");
+        const extractionResult = await api.post<{ status: string; ocr_required: boolean; message: string }>(
+          `/documents/${uploadedDocument.id}/extract-text`,
+          {}
+        );
+
+        if (runAiReview) {
+          setQueueStatus(extractionResult.ocr_required ? "IA pendiente de OCR" : "Encolando pre-revisión IA");
+          await api.post(`/documents/${uploadedDocument.id}/review-ai`, {
+            model_name: selectedModel,
+            criterion_ids: selectedCriterionIds,
+          });
+        }
+      }
+
+      setQueueStatus("Completado");
       setSuccess(true);
       setFile(null);
       await loadDocuments();
-      window.setTimeout(() => setSuccess(false), 3000);
+      window.setTimeout(() => {
+        setSuccess(false);
+        setQueueStatus("Listo para subir");
+      }, 3000);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, "Error al subir el archivo al almacenamiento local."));
+      setError(getErrorMessage(err, "Error al procesar el documento."));
+      setQueueStatus("Error");
     } finally {
       setUploading(false);
     }
@@ -242,7 +272,7 @@ export default function DocumentUploadClient() {
                     </div>
                     <div>
                       <p className="text-[13px] font-bold text-[#0F172A]">Extracción de texto</p>
-                      <p className="text-[12px] text-[#64748B]">disponible desde la Fase 2</p>
+                      <p className="text-[12px] text-[#64748B]">Docling y fragmentación</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3 pt-4 sm:px-4 sm:pt-0">
@@ -259,7 +289,7 @@ export default function DocumentUploadClient() {
                     </div>
                     <div>
                       <p className="text-[13px] font-bold text-[#0F172A]">Pre-revisión IA</p>
-                      <p className="text-[12px] text-[#64748B]">se activará en Fase 5</p>
+                      <p className="text-[12px] text-[#64748B]">Ollama local en cola</p>
                     </div>
                   </div>
                 </div>
@@ -305,7 +335,7 @@ export default function DocumentUploadClient() {
                           <td className="py-3 font-medium text-[#64748B]">{formatFileSize(file.size)}</td>
                           <td className="py-3">
                             <span className="inline-flex items-center rounded-sm bg-green-100 px-2.5 py-0.5 text-[11px] font-bold text-green-700">
-                              Listo para subir
+                              {queueStatus}
                             </span>
                           </td>
                           <td className="py-3">
@@ -401,12 +431,13 @@ export default function DocumentUploadClient() {
                 )}
 
                 <div className="mt-5 overflow-x-auto">
-                  <table className="w-full min-w-[760px] text-left text-[13px]">
+                  <table className="w-full min-w-[840px] text-left text-[13px]">
                     <thead>
                       <tr className="border-b border-[#E5EAF2] text-[#64748B]">
                         <th className="pb-3 font-bold">Documento</th>
                         <th className="pb-3 font-bold">Tipo</th>
                         <th className="pb-3 font-bold">Tamaño</th>
+                        <th className="pb-3 font-bold">Prioridad</th>
                         <th className="pb-3 font-bold">Fecha de carga</th>
                         <th className="pb-3 font-bold">Estado</th>
                         <th className="pb-3 text-right font-bold">Acciones</th>
@@ -415,19 +446,20 @@ export default function DocumentUploadClient() {
                     <tbody className="divide-y divide-[#E5EAF2]">
                       {loadingInitialData || loadingDocuments ? (
                         <tr>
-                          <td colSpan={6} className="py-8 text-center text-[13px] font-medium text-[#64748B]">
+                          <td colSpan={7} className="py-8 text-center text-[13px] font-medium text-[#64748B]">
                             Cargando historial de documentos…
                           </td>
                         </tr>
                       ) : filteredDocuments.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="py-8 text-center text-[13px] font-medium text-[#64748B]">
+                          <td colSpan={7} className="py-8 text-center text-[13px] font-medium text-[#64748B]">
                             No hay documentos que coincidan con la búsqueda.
                           </td>
                         </tr>
                       ) : (
                         filteredDocuments.map((document) => {
                           const status = getDocumentStatusDisplay(document.status);
+                          const priorityDisplay = getPriorityDisplay(document.priority);
 
                           return (
                             <tr key={document.id} className="group transition-colors hover:bg-[#F8FAFC]">
@@ -444,6 +476,11 @@ export default function DocumentUploadClient() {
                               </td>
                               <td className="py-3 pr-4 font-medium text-[#64748B]">
                                 {formatFileSize(document.size_bytes)}
+                              </td>
+                              <td className="py-3 pr-4">
+                                <span className={`inline-flex rounded-[6px] border px-2.5 py-1 text-[11px] font-bold ${priorityDisplay.className}`}>
+                                  {priorityDisplay.label}
+                                </span>
                               </td>
                               <td className="py-3 pr-4 font-medium text-[#64748B]">
                                 <span className="inline-flex items-center gap-1.5">
@@ -512,14 +549,14 @@ export default function DocumentUploadClient() {
                     <div className="flex gap-2">
                       {PRIORITIES.map((item) => (
                         <button
-                          key={item}
+                          key={item.value}
                           type="button"
-                          onClick={() => setPriority(item)}
+                          onClick={() => setPriority(item.value)}
                           className={`flex flex-1 items-center justify-center gap-2 rounded-[8px] border py-1.5 text-[12px] font-bold transition-all ${
-                            priority === item
-                              ? item === "Media"
+                            priority === item.value
+                              ? item.value === "media"
                                 ? "border-orange-200 bg-orange-50 text-[#0F172A]"
-                                : item === "Alta"
+                                : item.value === "alta"
                                   ? "border-red-200 bg-red-50 text-[#0F172A]"
                                   : "border-green-200 bg-green-50 text-[#0F172A]"
                               : "border-[#E2E8F0] bg-white text-[#64748B] hover:bg-[#F8FAFC]"
@@ -527,10 +564,10 @@ export default function DocumentUploadClient() {
                         >
                           <span
                             className={`size-1.5 rounded-full ${
-                              item === "Baja" ? "bg-green-500" : item === "Media" ? "bg-orange-500" : "bg-red-500"
+                              item.value === "baja" ? "bg-green-500" : item.value === "media" ? "bg-orange-500" : "bg-red-500"
                             }`}
                           />
-                          {item}
+                          {item.label}
                         </button>
                       ))}
                     </div>
@@ -543,32 +580,42 @@ export default function DocumentUploadClient() {
                         <label className="flex items-center gap-2 text-[12px] font-semibold text-[#64748B]">
                           <input
                             type="checkbox"
-                            checked
-                            disabled
-                            readOnly
-                            className="size-4 rounded border-[#CBD5E1] text-[#94A3B8]"
+                            checked={extractText}
+                            onChange={(event) => {
+                              const checked = event.target.checked;
+                              setExtractText(checked);
+                              if (!checked) {
+                                setRunAiReview(false);
+                              }
+                            }}
+                            className="size-4 rounded border-[#CBD5E1]"
                           />
-                          Extraer texto <span className="font-medium text-[#94A3B8]">(Fase 2)</span>
+                          Extraer texto
                         </label>
                         <label className="flex items-center gap-2 text-[12px] font-semibold text-[#64748B]">
                           <input
                             type="checkbox"
-                            checked
+                            checked={extractText}
                             disabled
                             readOnly
-                            className="size-4 rounded border-[#CBD5E1] text-[#94A3B8]"
+                            className="size-4 rounded border-[#CBD5E1] disabled:opacity-50"
                           />
-                          OCR automático <span className="font-medium text-[#94A3B8]">(Fase 3)</span>
+                          OCR automático <span className="font-medium text-[#94A3B8]">(si aplica)</span>
                         </label>
                         <label className="flex items-center gap-2 text-[12px] font-semibold text-[#64748B]">
                           <input
                             type="checkbox"
-                            checked={false}
-                            disabled
-                            readOnly
-                            className="size-4 rounded border-[#CBD5E1] text-[#94A3B8]"
+                            checked={runAiReview}
+                            onChange={(event) => {
+                              const checked = event.target.checked;
+                              setRunAiReview(checked);
+                              if (checked) {
+                                setExtractText(true);
+                              }
+                            }}
+                            className="size-4 rounded border-[#CBD5E1]"
                           />
-                          Pre-revisión IA <span className="font-medium text-[#94A3B8]">(Fase 5)</span>
+                          Pre-revisión IA
                         </label>
                         <label className="flex items-center gap-2 text-[12px] font-semibold text-[#64748B]">
                           <input
@@ -580,19 +627,63 @@ export default function DocumentUploadClient() {
                           />
                           Notificar revisor <span className="font-medium text-[#94A3B8]">(posterior)</span>
                         </label>
+                        {runAiReview && (
+                          <select
+                            value={selectedModel}
+                            onChange={(event) => setSelectedModel(event.target.value)}
+                            className="h-9 w-full rounded-[8px] border border-[#DDE5F0] bg-white px-3 text-[12px] font-semibold text-[#334155]"
+                          >
+                            <option value="qwen3.5:9b">Qwen 3.5 9B</option>
+                            <option value="llama3.1:8b">Llama 3.1 8B</option>
+                            <option value="phi4">Phi-4</option>
+                            <option value="deepseek-r1:8b">DeepSeek R1 8B</option>
+                          </select>
+                        )}
                       </div>
                     </div>
                     <div className="space-y-3">
                       <p className="text-[13px] font-bold text-[#0F172A]">Criterios a aplicar</p>
-                      <div className="relative flex h-full flex-col gap-2 rounded-[8px] border border-[#E2E8F0] p-3 opacity-70">
-                        {FUTURE_CRITERIA.map((criterion) => (
-                          <span
-                            key={criterion}
-                            className="inline-flex w-max items-center gap-1 rounded bg-[#EFF6FF] px-2 py-0.5 text-[11px] font-bold text-[#2563EB]"
-                          >
-                            {criterion} <X className="size-3" />
-                          </span>
-                        ))}
+                      <div className="relative flex h-full flex-col gap-3 rounded-[8px] border border-[#E2E8F0] p-3">
+                        <div>
+                          <p className="mb-2 text-[12px] font-bold text-[#0F172A]">Globales siempre aplicados</p>
+                          <div className="flex flex-wrap gap-2">
+                            {activeGlobalCriteria.length === 0 ? (
+                              <span className="text-[11px] font-medium text-[#94A3B8]">No hay criterios globales activos.</span>
+                            ) : (
+                              activeGlobalCriteria.map((criterion) => (
+                                <span key={criterion.id} className="rounded bg-[#ECFDF5] px-2 py-0.5 text-[11px] font-bold text-emerald-700">
+                                  {criterion.name}
+                                </span>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="mb-2 text-[12px] font-bold text-[#0F172A]">Plantillas individuales</p>
+                          <div className="space-y-2">
+                            {activeIndividualCriteria.length === 0 ? (
+                              <span className="text-[11px] font-medium text-[#94A3B8]">No tienes plantillas individuales activas.</span>
+                            ) : (
+                              activeIndividualCriteria.map((criterion) => (
+                                <label key={criterion.id} className="flex items-center gap-2 text-[12px] font-semibold text-[#64748B]">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedCriterionIds.includes(criterion.id)}
+                                    onChange={(event) => {
+                                      setSelectedCriterionIds((current) =>
+                                        event.target.checked
+                                          ? [...current, criterion.id]
+                                          : current.filter((id) => id !== criterion.id)
+                                      );
+                                    }}
+                                    className="size-4 rounded border-[#CBD5E1]"
+                                  />
+                                  {criterion.name}
+                                </label>
+                              ))
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -613,6 +704,11 @@ export default function DocumentUploadClient() {
 
                       <span className="text-[#64748B]">Peso seleccionado:</span>
                       <span className="text-right text-[#0F172A]">{file ? formatFileSize(file.size) : "0 KB"}</span>
+
+                      <span className="text-[#64748B]">Procesamiento:</span>
+                      <span className="text-right text-[#0F172A]">
+                        {runAiReview ? "Texto + IA" : extractText ? "Texto" : "Solo carga"}
+                      </span>
                     </div>
                   </div>
 
@@ -630,7 +726,10 @@ export default function DocumentUploadClient() {
                           type="button"
                           variant="outline"
                           className="h-10 rounded-[8px] border-[#2563EB] px-5 text-[13px] font-bold text-[#2563EB] hover:bg-[#EFF6FF]"
-                          onClick={() => setFile(null)}
+                          onClick={() => {
+                            setFile(null);
+                            setQueueStatus("Listo para subir");
+                          }}
                           disabled={!file || uploading}
                         >
                           Cancelar
@@ -654,7 +753,7 @@ export default function DocumentUploadClient() {
                       </div>
                     </div>
                     <p className="text-right text-[12px] font-medium text-[#64748B]">
-                      En esta fase la carga solo registra el documento y sus metadatos.
+                      La carga respeta la secuencia: archivo, extracción, OCR si aplica y pre-revisión IA.
                     </p>
                   </div>
                 </div>

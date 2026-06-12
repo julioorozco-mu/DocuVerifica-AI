@@ -28,11 +28,19 @@ export interface UserProfile {
   created_at: string;
 }
 
+export type DocumentPriority = "baja" | "media" | "alta";
+
+export interface ProcessingRequest {
+  model_name?: string;
+  criterion_ids?: string[];
+}
+
 export interface DocumentInfo {
   id: string;
   filename: string;
   size_bytes: number;
   status: string;
+  priority: DocumentPriority;
   user_id?: string;
   error_message?: string;
   created_at: string;
@@ -245,9 +253,10 @@ export const api = {
     }
   },
 
-  async uploadFile(file: File): Promise<DocumentInfo> {
+  async uploadFile(file: File, priority: DocumentPriority = "media"): Promise<DocumentInfo> {
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("priority", priority);
 
     const res = await fetch(`${API_BASE_URL}/documents/upload`, {
       method: "POST",
