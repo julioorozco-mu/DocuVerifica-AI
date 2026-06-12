@@ -45,6 +45,11 @@ class Document(Base):
         nullable=False, 
         default="uploaded"
     )
+    priority = Column(
+        ENUM("baja", "media", "alta", name="document_priority", create_type=False),
+        nullable=False,
+        default="media",
+    )
     user_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="SET NULL"), nullable=True)
     error_message = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -54,6 +59,22 @@ class Document(Base):
     verdict = relationship("HumanVerdict", back_populates="document", uselist=False)
     chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan", order_by="DocumentChunk.chunk_index")
     ai_results = relationship("AIReviewResult", back_populates="document", cascade="all, delete-orphan")
+    processing_request = relationship("DocumentProcessingRequest", back_populates="document", uselist=False, cascade="all, delete-orphan")
+
+
+class DocumentProcessingRequest(Base):
+    __tablename__ = "document_processing_requests"
+
+    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True)
+    requested_ai = Column(Boolean, nullable=False, default=False)
+    model_name = Column(String(100), nullable=True)
+    selected_criterion_ids = Column(JSONB, nullable=False, default=list)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    document = relationship("Document", back_populates="processing_request")
+    creator = relationship("Profile")
 
 
 class HumanVerdict(Base):

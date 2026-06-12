@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from uuid import UUID
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 # --- Autenticación y Tokens ---
 class Token(BaseModel):
@@ -49,6 +49,7 @@ class DocumentResponse(BaseModel):
     filename: str
     size_bytes: int
     status: str
+    priority: str = "media"
     user_id: Optional[UUID] = None
     error_message: Optional[str] = None
     created_at: datetime
@@ -176,6 +177,7 @@ class AIReviewResultResponse(BaseModel):
 
 class AIReviewRequest(BaseModel):
     model_name: Optional[str] = None
+    criterion_ids: List[UUID] = Field(default_factory=list)
 
 
 # --- Ollama Structured Output ---
