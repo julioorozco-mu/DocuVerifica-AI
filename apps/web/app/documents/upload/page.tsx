@@ -1,5 +1,5 @@
-import DocumentUploadClient from "@/components/documents/DocumentUploadClient";
+import { redirect } from "next/navigation";
 
 export default function DocumentUploadPage() {
-  return <DocumentUploadClient />;
+  redirect("/documents");
 }

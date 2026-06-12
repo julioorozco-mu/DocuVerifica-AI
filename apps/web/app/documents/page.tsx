@@ -1,5 +1,5 @@
-import DocumentsListClient from "@/components/documents/DocumentsListClient";
+import DocumentUploadClient from "@/components/documents/DocumentUploadClient";
 
-export default function DocumentsListPage() {
-  return <DocumentsListClient />;
+export default function DocumentsPage() {
+  return <DocumentUploadClient />;
 }
