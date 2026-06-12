@@ -12,8 +12,8 @@ __pycache__/
 out/
 
 # Local environment
-# .env
-# .env.*
+.env
+.env.*
 # apps/api/.env
 # apps/web/.env*
 # !.env.example
